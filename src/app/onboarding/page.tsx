@@ -31,7 +31,6 @@ type FormData = z.infer<typeof schema>
 
 export default function OnboardingPage() {
   const router = useRouter()
-  const supabase = createClient()
   const [step, setStep] = useState<"identity" | "avatar">("identity")
   const [loading, setLoading] = useState(false)
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null)
@@ -56,6 +55,7 @@ export default function OnboardingPage() {
       return
     }
     setCheckingUsername(true)
+    const supabase = createClient()
     const { data } = await supabase
       .from("profiles")
       .select("id")
@@ -69,6 +69,7 @@ export default function OnboardingPage() {
     if (!usernameAvailable) return
     setLoading(true)
 
+    const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       router.push("/login")

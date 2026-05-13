@@ -21,9 +21,9 @@ const NAV_ITEMS = [
 export default function DashboardNav({ profile }: { profile: Profile }) {
   const pathname = usePathname()
   const router = useRouter()
-  const supabase = createClient()
 
   async function handleLogout() {
+    const supabase = createClient()
     await supabase.auth.signOut()
     router.push("/")
   }

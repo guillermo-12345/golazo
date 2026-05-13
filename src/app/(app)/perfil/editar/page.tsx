@@ -16,7 +16,6 @@ import Link from "next/link"
 
 export default function EditarPerfilPage() {
   const router = useRouter()
-  const supabase = createClient()
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -27,6 +26,7 @@ export default function EditarPerfilPage() {
 
   useEffect(() => {
     async function load() {
+      const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         router.push("/login")
@@ -52,6 +52,7 @@ export default function EditarPerfilPage() {
 
   async function handleSave() {
     setSaving(true)
+    const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
