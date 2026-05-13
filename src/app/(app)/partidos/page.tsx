@@ -4,6 +4,7 @@ import Link from "next/link"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import type { Match } from "@/types/database"
+import TeamFlag from "@/components/TeamFlag"
 
 export default async function PartidosPage() {
   const supabase = await createClient()
@@ -84,9 +85,12 @@ function MatchList({ matches }: { matches: Match[] }) {
             </span>
           </div>
           <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
-            <div className="text-right">
-              <p className="text-white font-bold text-sm md:text-base">{m.home_team}</p>
-              <p className="text-gray-600 text-xs">{m.home_team_code}</p>
+            <div className="flex items-center gap-2 justify-end">
+              <div className="text-right min-w-0">
+                <p className="text-white font-bold text-sm md:text-base truncate">{m.home_team}</p>
+                <p className="text-gray-600 text-xs">{m.home_team_code}</p>
+              </div>
+              <TeamFlag code={m.home_team_code} size={32} />
             </div>
             <div className="text-center">
               {m.status === "scheduled" ? (
@@ -97,9 +101,12 @@ function MatchList({ matches }: { matches: Match[] }) {
                 </span>
               )}
             </div>
-            <div className="text-left">
-              <p className="text-white font-bold text-sm md:text-base">{m.away_team}</p>
-              <p className="text-gray-600 text-xs">{m.away_team_code}</p>
+            <div className="flex items-center gap-2">
+              <TeamFlag code={m.away_team_code} size={32} />
+              <div className="text-left min-w-0">
+                <p className="text-white font-bold text-sm md:text-base truncate">{m.away_team}</p>
+                <p className="text-gray-600 text-xs">{m.away_team_code}</p>
+              </div>
             </div>
           </div>
         </Link>

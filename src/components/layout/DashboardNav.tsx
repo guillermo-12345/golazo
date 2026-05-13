@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Calendar, Trophy, GitBranch, User, LogOut } from "lucide-react"
+import { LayoutDashboard, Calendar, Trophy, GitBranch, User, LogOut, Grid3X3 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import type { Profile } from "@/types/database"
@@ -12,6 +12,7 @@ import NotificationBell from "@/components/notifications/NotificationBell"
 
 const NAV_ITEMS = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Inicio" },
+  { href: "/grupos", icon: Grid3X3, label: "Grupos" },
   { href: "/partidos", icon: Calendar, label: "Partidos" },
   { href: "/ligas", icon: Trophy, label: "Ligas" },
   { href: "/bracket", icon: GitBranch, label: "Bracket" },

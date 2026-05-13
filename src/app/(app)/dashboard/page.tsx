@@ -5,6 +5,7 @@ import { Trophy, Flame, Target } from "lucide-react"
 import Link from "next/link"
 import type { Profile, Match } from "@/types/database"
 import LeagueIcon from "@/components/LeagueIcon"
+import TeamFlag from "@/components/TeamFlag"
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -88,15 +89,15 @@ export default async function DashboardPage() {
             {upcomingMatches.map((match) => (
               <div key={match.id} className="bg-white/5 border border-white/10 hover:border-green-500/30 rounded-2xl p-4 transition-colors">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3 flex-1">
-                    <span className="text-2xl">{match.home_team_code}</span>
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <TeamFlag code={match.home_team_code} size={28} />
                     <div className="text-center flex-1">
                       <p className="text-xs text-gray-500 mb-1">
                         {formatDistanceToNow(new Date(match.scheduled_at), { addSuffix: true, locale: es })}
                       </p>
                       <p className="text-white font-bold text-sm">vs</p>
                     </div>
-                    <span className="text-2xl">{match.away_team_code}</span>
+                    <TeamFlag code={match.away_team_code} size={28} />
                   </div>
                   <Link
                     href={`/partidos/${match.id}`}
@@ -105,9 +106,9 @@ export default async function DashboardPage() {
                     Predecir
                   </Link>
                 </div>
-                <div className="flex justify-between mt-2">
-                  <span className="text-sm text-gray-400 font-medium">{match.home_team}</span>
-                  <span className="text-sm text-gray-400 font-medium">{match.away_team}</span>
+                <div className="flex justify-between mt-2 text-sm text-gray-400 font-medium">
+                  <span className="truncate">{match.home_team}</span>
+                  <span className="truncate text-right">{match.away_team}</span>
                 </div>
               </div>
             ))}

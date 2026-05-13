@@ -7,6 +7,7 @@ import { es } from "date-fns/locale"
 import type { Match } from "@/types/database"
 import PredictionForm from "@/components/predictions/PredictionForm"
 import PredictionsSocialFeed from "@/components/predictions/PredictionsSocialFeed"
+import TeamFlag from "@/components/TeamFlag"
 
 export default async function PartidoDetailPage({
   params,
@@ -87,12 +88,12 @@ export default async function PartidoDetailPage({
           </span>
         </div>
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
-          <div className="text-center">
-            <div className="w-16 h-16 mx-auto mb-2 bg-white/10 rounded-2xl flex items-center justify-center text-2xl font-black">
-              {match.home_team_code}
+          <Link href={`/equipos/${match.home_team_code}`} className="text-center group">
+            <div className="mb-2 flex justify-center">
+              <TeamFlag code={match.home_team_code} size={64} className="group-hover:scale-105 transition-transform" />
             </div>
-            <p className="text-white font-bold">{match.home_team}</p>
-          </div>
+            <p className="text-white font-bold group-hover:text-green-400 transition-colors">{match.home_team}</p>
+          </Link>
           <div className="text-center">
             {match.status === "scheduled" ? (
               <span className="text-2xl text-gray-500 font-light">vs</span>
@@ -102,12 +103,12 @@ export default async function PartidoDetailPage({
               </span>
             )}
           </div>
-          <div className="text-center">
-            <div className="w-16 h-16 mx-auto mb-2 bg-white/10 rounded-2xl flex items-center justify-center text-2xl font-black">
-              {match.away_team_code}
+          <Link href={`/equipos/${match.away_team_code}`} className="text-center group">
+            <div className="mb-2 flex justify-center">
+              <TeamFlag code={match.away_team_code} size={64} className="group-hover:scale-105 transition-transform" />
             </div>
-            <p className="text-white font-bold">{match.away_team}</p>
-          </div>
+            <p className="text-white font-bold group-hover:text-green-400 transition-colors">{match.away_team}</p>
+          </Link>
         </div>
         <div className="flex items-center justify-center gap-4 mt-4 text-xs text-gray-500">
           <span className="flex items-center gap-1">
