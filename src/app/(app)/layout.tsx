@@ -1,0 +1,35 @@
+import { createClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
+import DashboardNav from "@/components/layout/DashboardNav"
+import type { Profile } from "@/types/database"
+
+export const dynamic = "force-dynamic"
+
+export default async function AppLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) redirect("/login")
+
+  const { data: profileData } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .single()
+
+  if (!profileData) redirect("/onboarding")
+  const profile = profileData as Profile
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <DashboardNav profile={profile} />
+      <div className="flex-1 pt-14 md:pt-0 pb-20 md:pb-0 md:pl-64">
+        {children}
+      </div>
+    </div>
+  )
+}

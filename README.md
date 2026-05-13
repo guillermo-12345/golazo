@@ -1,36 +1,95 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Golazo ⚽
 
-## Getting Started
+App de quiniela del Mundial 2026 con ligas privadas, comodines y bracket challenge.
 
-First, run the development server:
+## Stack
+
+- Next.js 16 (App Router, Turbopack)
+- React 19 + Tailwind v4
+- Supabase (Auth + Postgres + Realtime)
+- API-Football (datos del torneo)
+- DiceBear (avatares + escudos generados)
+- Vercel (hosting + cron)
+
+## Setup local
 
 ```bash
+npm install
+cp .env.local.example .env.local
+# completar las variables
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Variables de entorno
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Variable | Dónde se obtiene |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | supabase.com → Project Settings → API |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | supabase.com → Project Settings → API |
+| `SUPABASE_SERVICE_ROLE_KEY` | supabase.com → Project Settings → API (secreto) |
+| `API_FOOTBALL_KEY` | rapidapi.com → API-Football by api-sports |
+| `API_FOOTBALL_LEAGUE_ID` | `1` para el Mundial |
+| `API_FOOTBALL_SEASON` | `2026` |
+| `CRON_SECRET` | Vercel lo genera al deployar |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Setup de Supabase
 
-## Learn More
+1. Crear proyecto en supabase.com
+2. **SQL Editor** → ejecutar en orden:
+   - `supabase/schema.sql`
+   - `supabase/migrations/001_points_engine.sql`
+   - `supabase/migrations/002_badges_activity_notifications.sql`
+3. **Authentication → Providers → Google** → activar con Client ID/Secret de Google Cloud Console
+4. **Authentication → URL Configuration** → agregar:
+   - Site URL: `http://localhost:3000` (dev) o el dominio de Vercel (prod)
+   - Redirect URL: `https://<dominio>/auth/callback`
+5. **Database → Replication** → habilitar realtime para: `notifications`, `league_members`, `reactions`
 
-To learn more about Next.js, take a look at the following resources:
+## Deploy a Vercel
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Push del código a GitHub (sin `.env.local`)
+2. vercel.com → New Project → Import desde GitHub
+3. Root Directory: `golazo` (si está en subdirectorio del repo)
+4. Environment Variables: pegar todas las del `.env.local`
+   - **No** definir `CRON_SECRET`, Vercel lo genera
+5. Deploy
+6. Volver a Supabase y agregar el dominio de Vercel a URL Configuration
+7. Listo — los crons arrancan automáticamente
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Crons configurados
 
-## Deploy on Vercel
+| Cron | Frecuencia | Qué hace |
+|---|---|---|
+| `/api/cron/sync-matches` | cada 6h | Sync completo del fixture |
+| `/api/cron/sync-live` | cada 2 min | Solo cuando hay partidos en vivo o próximos |
+| `/api/cron/prediction-reminders` | cada 5 min | Recordatorio 15 min antes de cada partido |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Estructura
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+src/
+├── app/
+│   ├── (app)/              # rutas autenticadas con layout compartido
+│   ├── api/                # endpoints (sync, crons)
+│   ├── auth/callback/      # OAuth callback
+│   ├── login/
+│   ├── onboarding/
+│   └── page.tsx            # landing
+├── components/             # UI components reutilizables
+├── lib/                    # helpers (supabase, avatar, badges, etc.)
+├── proxy.ts                # auth guard (Next 16: era middleware antes)
+└── types/database.ts
+
+supabase/
+├── schema.sql              # tablas base + RLS
+└── migrations/
+    ├── 001_points_engine.sql               # motor de puntos
+    └── 002_badges_activity_notifications.sql  # badges + feed + notif
+```
+
+## Roadmap
+
+- [ ] Bracket Challenge (a desbloquear tras el sorteo de dic 2025)
+- [ ] Predicciones avanzadas: scoring de córners, tarjetas, goleador (UI ya está)
+- [ ] App mobile nativa con Expo
+- [ ] Compartir liga via deep link / QR
