@@ -9,6 +9,8 @@ import MatchPredictionStats from "@/components/predictions/MatchPredictionStats"
 import TeamFlag from "@/components/TeamFlag"
 import LocalDateTime from "@/components/LocalDateTime"
 import ShareButton from "@/components/ShareButton"
+import LiveScore from "@/components/matches/LiveScore"
+import LiveMatchScoreboard from "@/components/matches/LiveMatchScoreboard"
 
 export default async function PartidoDetailPage({
   params,
@@ -95,29 +97,8 @@ export default async function PartidoDetailPage({
             {match.stage}
           </span>
         </div>
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
-          <Link href={`/equipos/${match.home_team_code}`} className="text-center group">
-            <div className="mb-2 flex justify-center">
-              <TeamFlag code={match.home_team_code} size={64} className="group-hover:scale-105 transition-transform" />
-            </div>
-            <p className="text-white font-bold group-hover:text-green-400 transition-colors">{match.home_team}</p>
-          </Link>
-          <div className="text-center">
-            {match.status === "scheduled" ? (
-              <span className="text-2xl text-gray-500 font-light">vs</span>
-            ) : (
-              <span className="text-3xl text-white font-black">
-                {match.home_score ?? 0} - {match.away_score ?? 0}
-              </span>
-            )}
-          </div>
-          <Link href={`/equipos/${match.away_team_code}`} className="text-center group">
-            <div className="mb-2 flex justify-center">
-              <TeamFlag code={match.away_team_code} size={64} className="group-hover:scale-105 transition-transform" />
-            </div>
-            <p className="text-white font-bold group-hover:text-green-400 transition-colors">{match.away_team}</p>
-          </Link>
-        </div>
+        <LiveScore initialMatch={match} />
+        <LiveMatchScoreboard initialMatch={match} />
         <div className="flex items-center justify-center gap-4 mt-4 text-xs text-gray-500 flex-wrap">
           <span className="flex items-center gap-1">
             <Clock size={12} />

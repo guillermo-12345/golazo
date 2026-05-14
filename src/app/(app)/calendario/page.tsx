@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import type { Match } from "@/types/database"
 import TeamFlag from "@/components/TeamFlag"
 import LocalDateTime from "@/components/LocalDateTime"
+import LiveBadge from "@/components/matches/LiveBadge"
 import { CalendarDays, MapPin } from "lucide-react"
 import Link from "next/link"
 import { format } from "date-fns"
@@ -92,7 +93,11 @@ export default async function CalendarioPage() {
                     <Link
                       key={m.id}
                       href={`/partidos/${m.id}`}
-                      className="block bg-white/5 border border-white/10 hover:border-green-500/30 rounded-2xl p-4 transition-colors"
+                      className={`block bg-white/5 border rounded-2xl p-4 transition-colors ${
+                        m.status === "live"
+                          ? "border-red-500/40 hover:border-red-500/60 bg-red-500/[0.03]"
+                          : "border-white/10 hover:border-green-500/30"
+                      }`}
                     >
                       <div className="flex items-center justify-between mb-2 text-xs">
                         <span className={`font-bold uppercase tracking-wider ${STAGE_COLOR[m.stage] ?? "text-gray-400"}`}>
@@ -121,7 +126,12 @@ export default async function CalendarioPage() {
                               {m.home_score ?? 0}-{m.away_score ?? 0}
                             </span>
                           ) : m.status === "live" ? (
-                            <span className="text-red-400 text-xs font-bold animate-pulse">EN VIVO</span>
+                            <div className="flex flex-col items-center">
+                              <span className="text-white font-black text-lg">
+                                {m.home_score ?? 0}-{m.away_score ?? 0}
+                              </span>
+                              <LiveBadge minute={m.minute} />
+                            </div>
                           ) : (
                             <span className="text-gray-500 text-sm">vs</span>
                           )}

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Trophy, GitBranch, User, LogOut, Grid3X3, CalendarDays, BarChart3, Settings, Search, BookOpen, TrendingUp } from "lucide-react"
+import { LayoutDashboard, Trophy, GitBranch, User, LogOut, Grid3X3, CalendarDays, BarChart3, Settings, Search, BookOpen, TrendingUp, History } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import type { Profile } from "@/types/database"
@@ -18,6 +18,7 @@ const NAV_ITEMS = [
   { href: "/bracket", icon: GitBranch, label: "Bracket" },
   { href: "/ranking", icon: BarChart3, label: "Ranking" },
   { href: "/estadisticas", icon: TrendingUp, label: "Estadísticas" },
+  { href: "/historia", icon: History, label: "Mi historia" },
   { href: "/buscar", icon: Search, label: "Buscar" },
   { href: "/como-jugar", icon: BookOpen, label: "Cómo jugar" },
   { href: "/perfil", icon: User, label: "Perfil" },
