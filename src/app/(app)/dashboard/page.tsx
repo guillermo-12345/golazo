@@ -6,9 +6,11 @@ import Link from "next/link"
 import type { Profile, Match } from "@/types/database"
 import LeagueIcon from "@/components/LeagueIcon"
 import TeamFlag from "@/components/TeamFlag"
+import { getLocale } from "@/lib/get-locale"
 
 export default async function DashboardPage() {
   const supabase = await createClient()
+  const locale = await getLocale()
   const { data: { user } } = await supabase.auth.getUser()
 
   const [profileRes, matchesRes, leaguesRes, predictionsRes, badgesRes] = await Promise.all([
@@ -77,7 +79,11 @@ export default async function DashboardPage() {
         <h1 className="text-2xl md:text-3xl font-black text-white">
           Hola, <span className="text-green-500">{profile?.display_name}</span> 👋
         </h1>
-        <p className="text-gray-500 mt-1">¿Listo para predecir los próximos partidos?</p>
+        <p className="text-gray-500 mt-1">
+          {locale === "es-AR"
+            ? "¿Listo para predecir los próximos partidos?"
+            : "¿Listo para predecir los próximos partidos?"}
+        </p>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">

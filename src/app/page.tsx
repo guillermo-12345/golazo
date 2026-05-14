@@ -1,7 +1,9 @@
 import Link from "next/link"
 import { Trophy, Users, Zap, Target, ChevronRight, Star } from "lucide-react"
+import { getLocale } from "@/lib/get-locale"
+import { t } from "@/lib/i18n"
 
-const FEATURES = [
+const FEATURES_AR = [
   {
     icon: Target,
     title: "Predecí cada partido",
@@ -24,6 +26,29 @@ const FEATURES = [
   },
 ]
 
+const FEATURES_LATAM = [
+  {
+    icon: Target,
+    title: "Predice cada partido",
+    desc: "Apuesta al resultado exacto, al ganador o activa las opciones avanzadas para multiplicar tus puntos.",
+  },
+  {
+    icon: Users,
+    title: "Ligas con tus amigos",
+    desc: "Crea una liga privada, invita a quien quieras y compite en tu propia tabla de posiciones.",
+  },
+  {
+    icon: Trophy,
+    title: "Bracket Challenge",
+    desc: "Predice el cuadro completo antes de que empiece el torneo. Cada avance correcto suma puntos.",
+  },
+  {
+    icon: Zap,
+    title: "Comodines estratégicos",
+    desc: "Usa el Todo o Nada, el Escudo o el Ladrón en el momento justo para cambiar la partida.",
+  },
+]
+
 const STATS = [
   { label: "Partidos a predecir", value: "104" },
   { label: "Equipos participantes", value: "48" },
@@ -31,7 +56,10 @@ const STATS = [
   { label: "Es gratis", value: "100%" },
 ]
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const locale = await getLocale()
+  const FEATURES = locale === "es-AR" ? FEATURES_AR : FEATURES_LATAM
+
   return (
     <main className="min-h-screen flex flex-col">
       {/* Nav */}
@@ -59,13 +87,13 @@ export default function LandingPage() {
           </div>
 
           <h1 className="text-5xl md:text-7xl font-black text-white leading-none tracking-tight mb-6">
-            La quiniela<br />
-            <span className="text-green-500">más épica</span><br />
-            del Mundial
+            {t("heroLine1", locale)}<br />
+            <span className="text-green-500">{t("heroLine2", locale)}</span><br />
+            {t("heroLine3", locale)}
           </h1>
 
           <p className="text-lg text-gray-400 max-w-xl mx-auto mb-10">
-            Predecí resultados, competí en ligas privadas con tus amigos, usá comodines y demostrá que sabés más de fútbol que nadie.
+            {t("predictMore", locale)}
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -73,7 +101,7 @@ export default function LandingPage() {
               href="/login"
               className="flex items-center gap-2 bg-green-500 hover:bg-green-400 text-black font-black text-lg px-8 py-4 rounded-full transition-all hover:scale-105"
             >
-              Jugá gratis <ChevronRight size={20} />
+              {t("ctaPlay", locale)} <ChevronRight size={20} />
             </Link>
             <Link href="#features" className="text-gray-400 hover:text-white font-medium transition-colors">
               Cómo funciona ↓
@@ -128,12 +156,16 @@ export default function LandingPage() {
               ¿Listo para el<br />
               <span className="text-green-500">Mundial?</span>
             </h2>
-            <p className="text-gray-400 mb-8">Creá tu cuenta gratis, armá tu liga y empezá a predecir.</p>
+            <p className="text-gray-400 mb-8">
+              {locale === "es-AR"
+                ? "Creá tu cuenta gratis, armá tu liga y empezá a predecir."
+                : "Crea tu cuenta gratis, arma tu liga y empieza a predecir."}
+            </p>
             <Link
               href="/login"
               className="inline-flex items-center gap-2 bg-green-500 hover:bg-green-400 text-black font-black text-lg px-10 py-4 rounded-full transition-all hover:scale-105"
             >
-              Empezar ahora <ChevronRight size={20} />
+              {t("ctaStart", locale)} <ChevronRight size={20} />
             </Link>
           </div>
         </div>

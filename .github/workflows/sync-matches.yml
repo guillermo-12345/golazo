@@ -1,0 +1,28 @@
+name: Sincronizar partidos con API-Football
+
+# Alternativa gratis a Vercel Cron (plan Hobby solo permite 1/día).
+# GitHub Actions corre estos cron jobs sin costo.
+#
+# Para activar:
+# 1. En GitHub: Settings -> Secrets and variables -> Actions
+# 2. Crear secret: SUPABASE_SERVICE_KEY (con tu service role key de Supabase)
+# 3. Crear secret: APP_URL (con tu URL de Vercel, ej: https://golazo-jade.vercel.app)
+# 4. Listo, los workflows se ejecutan automáticamente.
+
+on:
+  schedule:
+    # Sync completo cada 6 horas
+    - cron: "0 */6 * * *"
+  workflow_dispatch: # Permite ejecutarlo manualmente desde la UI de GitHub
+
+jobs:
+  sync-matches:
+    name: Sync completo del fixture
+    runs-on: ubuntu-latest
+    steps:
+      - name: Llamar al endpoint de sync
+        run: |
+          curl -X POST "${{ secrets.APP_URL }}/api/matches/sync" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_KEY }}" \
+            -H "Content-Type: application/json" \
+            --fail-with-body

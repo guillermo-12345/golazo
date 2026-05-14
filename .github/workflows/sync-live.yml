@@ -1,0 +1,22 @@
+name: Sincronizar scores en vivo
+
+# Corre cada 2 minutos durante todo el día.
+# El endpoint internamente chequea si hay partidos en vivo o próximos antes
+# de pegarle a API-Football, así que solo consume cuota cuando hace falta.
+
+on:
+  schedule:
+    - cron: "*/5 * * * *" # cada 5 minutos (GitHub no soporta menos)
+  workflow_dispatch:
+
+jobs:
+  sync-live:
+    name: Actualizar scores en vivo
+    runs-on: ubuntu-latest
+    steps:
+      - name: Llamar al endpoint de sync en vivo
+        run: |
+          curl -X POST "${{ secrets.APP_URL }}/api/matches/sync?live=1" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_KEY }}" \
+            -H "Content-Type: application/json" \
+            --fail-with-body
