@@ -1,13 +1,13 @@
 name: Sincronizar partidos con API-Football
 
 # IMPORTANTE: este workflow llama a API-Football, que requiere una key real
-# (no la 'placeholder'). Si la activás antes de tener la key, va a fallar
-# cada 6 horas con error 403/401.
+# (no la 'placeholder'). Si lo activas con cron antes de tener la key real,
+# va a fallar cada 6 horas con error 403/401.
 #
 # Cuando obtengas la key:
-# 1. Actualizá API_FOOTBALL_KEY en Vercel
-# 2. Descomentá el bloque schedule abajo
-# 3. Listo
+# 1. Actualiza API_FOOTBALL_KEY en Vercel (Environment Variables)
+# 2. Descomenta el bloque schedule abajo
+# 3. Push
 
 on:
   # schedule:
@@ -19,16 +19,15 @@ jobs:
     name: Sync completo del fixture
     runs-on: ubuntu-latest
     steps:
-      - name: Validar secrets
+      - name: Sync completo
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: |
-          if [ -z "${{ secrets.APP_URL }}" ] || [ -z "${{ secrets.SUPABASE_SERVICE_KEY }}" ]; then
-            echo "::warning::Secrets no configurados. Saltando."
+          if [ -z "$APP_URL" ] || [ -z "$SUPABASE_KEY" ]; then
+            echo "::warning::Secrets APP_URL o SUPABASE_SERVICE_KEY no configurados. Saltando."
             exit 0
           fi
-      - name: Llamar al endpoint de sync
-        if: ${{ secrets.APP_URL != '' && secrets.SUPABASE_SERVICE_KEY != '' }}
-        run: |
-          curl -X POST "${{ secrets.APP_URL }}/api/matches/sync" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_KEY }}" \
-            -H "Content-Type: application/json" \
-            --fail-with-body
+          curl --fail-with-body -X POST "$APP_URL/api/matches/sync" \
+            -H "Authorization: Bearer $SUPABASE_KEY" \
+            -H "Content-Type: application/json"

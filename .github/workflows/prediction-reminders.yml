@@ -1,7 +1,7 @@
 name: Recordatorios de predicción
 
-# Activado: corre cada 5 min pero el endpoint internamente solo manda notificaciones
-# si hay partidos que arrancan en ~15 minutos. Hasta el Mundial no manda nada.
+# Corre cada 5 min. El endpoint internamente solo manda notificaciones a
+# usuarios que no predijeron partidos por arrancar en ~15 min.
 
 on:
   schedule:
@@ -13,15 +13,14 @@ jobs:
     name: Mandar notificaciones a quien no predijo
     runs-on: ubuntu-latest
     steps:
-      - name: Validar secrets
+      - name: Mandar recordatorios
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: |
-          if [ -z "${{ secrets.APP_URL }}" ] || [ -z "${{ secrets.SUPABASE_SERVICE_KEY }}" ]; then
-            echo "::warning::Secrets no configurados. Saltando."
+          if [ -z "$APP_URL" ] || [ -z "$SUPABASE_KEY" ]; then
+            echo "::warning::Secrets APP_URL o SUPABASE_SERVICE_KEY no configurados. Saltando."
             exit 0
           fi
-      - name: Llamar al endpoint de recordatorios
-        if: ${{ secrets.APP_URL != '' && secrets.SUPABASE_SERVICE_KEY != '' }}
-        run: |
-          curl -X GET "${{ secrets.APP_URL }}/api/cron/prediction-reminders" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_KEY }}" \
-            --fail-with-body
+          curl --fail-with-body -X GET "$APP_URL/api/cron/prediction-reminders" \
+            -H "Authorization: Bearer $SUPABASE_KEY"
