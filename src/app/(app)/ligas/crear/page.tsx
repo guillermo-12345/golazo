@@ -7,7 +7,7 @@ import { generateInviteCode } from "@/lib/invite-code"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { Loader2, Globe, Lock, ArrowLeft, Sparkles, Shuffle } from "lucide-react"
+import { Loader2, Globe, Lock, ArrowLeft, Sparkles, Shuffle, Eye, EyeOff, KeyRound } from "lucide-react"
 import Link from "next/link"
 import LeagueIcon from "@/components/LeagueIcon"
 import {
@@ -42,6 +42,10 @@ export default function CrearLigaPage() {
   const [advancedEnabled, setAdvancedEnabled] = useState(false)
   const [iconStyle, setIconStyle] = useState<LeagueIconStyle>("shapes")
   const [iconSeed, setIconSeed] = useState(randomLeagueSeed())
+  const [usePassword, setUsePassword] = useState(false)
+  const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
   const [advancedOpts, setAdvancedOpts] = useState({
     firstScorer: true,
     goalMinute: false,
@@ -59,6 +63,13 @@ export default function CrearLigaPage() {
   } = useForm<FormData>({ resolver: zodResolver(schema) })
 
   async function onSubmit(data: FormData) {
+    setFormError(null)
+
+    if (type === "private" && usePassword && password.length < 4) {
+      setFormError("La contraseña debe tener al menos 4 caracteres")
+      return
+    }
+
     setLoading(true)
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -68,41 +79,41 @@ export default function CrearLigaPage() {
     }
 
     const inviteCode = type === "private" ? generateInviteCode() : null
+    const passwordToSend = type === "private" && usePassword && password ? password : null
 
-    const { data: league, error } = await supabase
-      .from("leagues")
-      .insert({
-        name: data.name,
-        description: data.description ?? null,
-        type,
-        invite_code: inviteCode,
-        banner_color: bannerColor,
-        created_by: user.id,
-        config: {
-          advancedOptions: { enabled: advancedEnabled, ...advancedOpts },
-          multipliers: { exactScore: 5, correctWinner: 1, correctDraw: 4, winnerWithDiff: 3 },
-          allowWildcards: true,
-          allowBracketChallenge: true,
-          icon: { style: iconStyle, seed: iconSeed },
-        },
-      })
-      .select()
-      .single()
+    // Llamar a la RPC que crea la liga y hashea el password con bcrypt en el servidor
+    const { data: rpcResult, error: rpcError } = await supabase.rpc("create_league", {
+      p_name: data.name,
+      p_description: data.description ?? null,
+      p_type: type,
+      p_invite_code: inviteCode,
+      p_banner_color: bannerColor,
+      p_config: {
+        advancedOptions: { enabled: advancedEnabled, ...advancedOpts },
+        multipliers: { exactScore: 5, correctWinner: 1, correctDraw: 4, winnerWithDiff: 3 },
+        allowWildcards: true,
+        allowBracketChallenge: true,
+        icon: { style: iconStyle, seed: iconSeed },
+      },
+      p_password: passwordToSend,
+    })
 
-    if (error || !league) {
-      console.error(error)
+    if (rpcError || !rpcResult) {
+      setFormError("No se pudo crear la liga. Intentá de nuevo.")
+      console.error(rpcError)
       setLoading(false)
       return
     }
 
-    // El creador se une automáticamente a su propia liga
-    const leagueData = league as { id: string }
-    await supabase.from("league_members").insert({
-      league_id: leagueData.id,
-      user_id: user.id,
-    })
+    const result = rpcResult as { ok: boolean; league_id?: string; error?: string }
+    if (!result.ok || !result.league_id) {
+      setFormError(`Error: ${result.error ?? "desconocido"}`)
+      setLoading(false)
+      return
+    }
 
-    router.push(`/ligas/${leagueData.id}`)
+    // La RPC ya insertó al creador como miembro. Solo redirigir.
+    router.push(`/ligas/${result.league_id}`)
   }
 
   return (
@@ -166,7 +177,10 @@ export default function CrearLigaPage() {
             </button>
             <button
               type="button"
-              onClick={() => setType("public")}
+              onClick={() => {
+                setType("public")
+                setUsePassword(false)
+              }}
               className={`p-4 rounded-xl border-2 transition-all text-left ${
                 type === "public"
                   ? "border-green-500 bg-green-500/10"
@@ -178,6 +192,56 @@ export default function CrearLigaPage() {
               <p className="text-gray-500 text-xs mt-1">Cualquiera se une</p>
             </button>
           </div>
+
+          {/* Contraseña — solo para ligas privadas */}
+          {type === "private" && (
+            <div className="mt-5 pt-5 border-t border-white/10">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <KeyRound size={14} className="text-yellow-400" />
+                  <span className="text-sm font-medium text-white">Proteger con contraseña</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setUsePassword((v) => !v)}
+                  className={`relative w-11 h-6 rounded-full transition-colors ${
+                    usePassword ? "bg-green-500" : "bg-white/10"
+                  }`}
+                >
+                  <div
+                    className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${
+                      usePassword ? "left-5" : "left-0.5"
+                    }`}
+                  />
+                </button>
+              </div>
+              <p className="text-gray-500 text-xs mb-3">
+                Doble seguridad: además del código de invitación, vas a pedir esta contraseña para entrar
+              </p>
+
+              {usePassword && (
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Mínimo 4 caracteres"
+                    minLength={4}
+                    maxLength={50}
+                    autoComplete="new-password"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-4 pr-10 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-green-500 transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Color */}
@@ -313,6 +377,12 @@ export default function CrearLigaPage() {
             </div>
           )}
         </div>
+
+        {formError && (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-red-400 text-sm">
+            {formError}
+          </div>
+        )}
 
         <button
           type="submit"

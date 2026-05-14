@@ -1,5 +1,5 @@
 // Mapping FIFA 3-letter code -> ISO 3166-1 alpha-2 (para flagcdn.com)
-// 48 selecciones clasificadas al Mundial 2026 (mejor estimación con bombo balanceado)
+// 48 selecciones clasificadas al Mundial 2026, según el sorteo oficial.
 
 export type TeamInfo = {
   name: string
@@ -9,77 +9,77 @@ export type TeamInfo = {
 }
 
 export const TEAMS: Record<string, TeamInfo> = {
-  // ───── Grupo A (Estadio Azteca, CDMX)
+  // ───── Grupo A
   MEX: { name: "México", fifaCode: "MEX", isoCode: "mx", group: "A" },
-  CRO: { name: "Croacia", fifaCode: "CRO", isoCode: "hr", group: "A" },
-  CMR: { name: "Camerún", fifaCode: "CMR", isoCode: "cm", group: "A" },
-  KSA: { name: "Arabia Saudita", fifaCode: "KSA", isoCode: "sa", group: "A" },
+  RSA: { name: "Sudáfrica", fifaCode: "RSA", isoCode: "za", group: "A" },
+  KOR: { name: "Corea del Sur", fifaCode: "KOR", isoCode: "kr", group: "A" },
+  CZE: { name: "Chequia", fifaCode: "CZE", isoCode: "cz", group: "A" },
 
-  // ───── Grupo B (BMO Field, Toronto)
+  // ───── Grupo B
   CAN: { name: "Canadá", fifaCode: "CAN", isoCode: "ca", group: "B" },
-  MAR: { name: "Marruecos", fifaCode: "MAR", isoCode: "ma", group: "B" },
-  NOR: { name: "Noruega", fifaCode: "NOR", isoCode: "no", group: "B" },
-  ECU: { name: "Ecuador", fifaCode: "ECU", isoCode: "ec", group: "B" },
+  BIH: { name: "Bosnia y Herzegovina", fifaCode: "BIH", isoCode: "ba", group: "B" },
+  QAT: { name: "Qatar", fifaCode: "QAT", isoCode: "qa", group: "B" },
+  SUI: { name: "Suiza", fifaCode: "SUI", isoCode: "ch", group: "B" },
 
-  // ───── Grupo C (MetLife Stadium, New Jersey)
-  USA: { name: "Estados Unidos", fifaCode: "USA", isoCode: "us", group: "C" },
-  IRN: { name: "Irán", fifaCode: "IRN", isoCode: "ir", group: "C" },
-  EGY: { name: "Egipto", fifaCode: "EGY", isoCode: "eg", group: "C" },
-  PAR: { name: "Paraguay", fifaCode: "PAR", isoCode: "py", group: "C" },
+  // ───── Grupo C
+  BRA: { name: "Brasil", fifaCode: "BRA", isoCode: "br", group: "C" },
+  MAR: { name: "Marruecos", fifaCode: "MAR", isoCode: "ma", group: "C" },
+  HAI: { name: "Haití", fifaCode: "HAI", isoCode: "ht", group: "C" },
+  SCO: { name: "Escocia", fifaCode: "SCO", isoCode: "gb-sct", group: "C" },
 
-  // ───── Grupo D (SoFi Stadium, Los Angeles)
-  ARG: { name: "Argentina", fifaCode: "ARG", isoCode: "ar", group: "D" },
-  SEN: { name: "Senegal", fifaCode: "SEN", isoCode: "sn", group: "D" },
-  AUT: { name: "Austria", fifaCode: "AUT", isoCode: "at", group: "D" },
-  NZL: { name: "Nueva Zelanda", fifaCode: "NZL", isoCode: "nz", group: "D" },
+  // ───── Grupo D
+  USA: { name: "Estados Unidos", fifaCode: "USA", isoCode: "us", group: "D" },
+  PAR: { name: "Paraguay", fifaCode: "PAR", isoCode: "py", group: "D" },
+  AUS: { name: "Australia", fifaCode: "AUS", isoCode: "au", group: "D" },
+  TUR: { name: "Turquía", fifaCode: "TUR", isoCode: "tr", group: "D" },
 
-  // ───── Grupo E (Mercedes-Benz Stadium, Atlanta)
-  FRA: { name: "Francia", fifaCode: "FRA", isoCode: "fr", group: "E" },
-  ITA: { name: "Italia", fifaCode: "ITA", isoCode: "it", group: "E" },
-  ALG: { name: "Argelia", fifaCode: "ALG", isoCode: "dz", group: "E" },
-  IRQ: { name: "Iraq", fifaCode: "IRQ", isoCode: "iq", group: "E" },
+  // ───── Grupo E
+  GER: { name: "Alemania", fifaCode: "GER", isoCode: "de", group: "E" },
+  CUW: { name: "Curazao", fifaCode: "CUW", isoCode: "cw", group: "E" },
+  CIV: { name: "Costa de Marfil", fifaCode: "CIV", isoCode: "ci", group: "E" },
+  ECU: { name: "Ecuador", fifaCode: "ECU", isoCode: "ec", group: "E" },
 
-  // ───── Grupo F (Levi's Stadium, San Francisco)
-  ESP: { name: "España", fifaCode: "ESP", isoCode: "es", group: "F" },
+  // ───── Grupo F
+  NED: { name: "Países Bajos", fifaCode: "NED", isoCode: "nl", group: "F" },
   JPN: { name: "Japón", fifaCode: "JPN", isoCode: "jp", group: "F" },
-  TUR: { name: "Turquía", fifaCode: "TUR", isoCode: "tr", group: "F" },
-  CRC: { name: "Costa Rica", fifaCode: "CRC", isoCode: "cr", group: "F" },
+  SWE: { name: "Suecia", fifaCode: "SWE", isoCode: "se", group: "F" },
+  TUN: { name: "Túnez", fifaCode: "TUN", isoCode: "tn", group: "F" },
 
-  // ───── Grupo G (AT&T Stadium, Dallas)
-  ENG: { name: "Inglaterra", fifaCode: "ENG", isoCode: "gb-eng", group: "G" },
-  COL: { name: "Colombia", fifaCode: "COL", isoCode: "co", group: "G" },
-  GHA: { name: "Ghana", fifaCode: "GHA", isoCode: "gh", group: "G" },
-  UZB: { name: "Uzbekistán", fifaCode: "UZB", isoCode: "uz", group: "G" },
+  // ───── Grupo G
+  BEL: { name: "Bélgica", fifaCode: "BEL", isoCode: "be", group: "G" },
+  EGY: { name: "Egipto", fifaCode: "EGY", isoCode: "eg", group: "G" },
+  IRN: { name: "Irán", fifaCode: "IRN", isoCode: "ir", group: "G" },
+  NZL: { name: "Nueva Zelanda", fifaCode: "NZL", isoCode: "nz", group: "G" },
 
-  // ───── Grupo H (NRG Stadium, Houston)
-  BRA: { name: "Brasil", fifaCode: "BRA", isoCode: "br", group: "H" },
-  SUI: { name: "Suiza", fifaCode: "SUI", isoCode: "ch", group: "H" },
-  POL: { name: "Polonia", fifaCode: "POL", isoCode: "pl", group: "H" },
-  JOR: { name: "Jordania", fifaCode: "JOR", isoCode: "jo", group: "H" },
+  // ───── Grupo H
+  ESP: { name: "España", fifaCode: "ESP", isoCode: "es", group: "H" },
+  CPV: { name: "Cabo Verde", fifaCode: "CPV", isoCode: "cv", group: "H" },
+  KSA: { name: "Arabia Saudita", fifaCode: "KSA", isoCode: "sa", group: "H" },
+  URU: { name: "Uruguay", fifaCode: "URU", isoCode: "uy", group: "H" },
 
-  // ───── Grupo I (Arrowhead Stadium, Kansas City)
-  POR: { name: "Portugal", fifaCode: "POR", isoCode: "pt", group: "I" },
-  KOR: { name: "Corea del Sur", fifaCode: "KOR", isoCode: "kr", group: "I" },
-  CZE: { name: "Chequia", fifaCode: "CZE", isoCode: "cz", group: "I" },
-  PAN: { name: "Panamá", fifaCode: "PAN", isoCode: "pa", group: "I" },
+  // ───── Grupo I
+  FRA: { name: "Francia", fifaCode: "FRA", isoCode: "fr", group: "I" },
+  SEN: { name: "Senegal", fifaCode: "SEN", isoCode: "sn", group: "I" },
+  IRQ: { name: "Irak", fifaCode: "IRQ", isoCode: "iq", group: "I" },
+  NOR: { name: "Noruega", fifaCode: "NOR", isoCode: "no", group: "I" },
 
-  // ───── Grupo J (Lincoln Financial Field, Philadelphia)
-  NED: { name: "Países Bajos", fifaCode: "NED", isoCode: "nl", group: "J" },
-  URU: { name: "Uruguay", fifaCode: "URU", isoCode: "uy", group: "J" },
-  TUN: { name: "Túnez", fifaCode: "TUN", isoCode: "tn", group: "J" },
-  HON: { name: "Honduras", fifaCode: "HON", isoCode: "hn", group: "J" },
+  // ───── Grupo J
+  ARG: { name: "Argentina", fifaCode: "ARG", isoCode: "ar", group: "J" },
+  ALG: { name: "Argelia", fifaCode: "ALG", isoCode: "dz", group: "J" },
+  AUT: { name: "Austria", fifaCode: "AUT", isoCode: "at", group: "J" },
+  JOR: { name: "Jordania", fifaCode: "JOR", isoCode: "jo", group: "J" },
 
-  // ───── Grupo K (Hard Rock Stadium, Miami)
-  BEL: { name: "Bélgica", fifaCode: "BEL", isoCode: "be", group: "K" },
-  AUS: { name: "Australia", fifaCode: "AUS", isoCode: "au", group: "K" },
-  CIV: { name: "Costa de Marfil", fifaCode: "CIV", isoCode: "ci", group: "K" },
-  VEN: { name: "Venezuela", fifaCode: "VEN", isoCode: "ve", group: "K" },
+  // ───── Grupo K
+  POR: { name: "Portugal", fifaCode: "POR", isoCode: "pt", group: "K" },
+  COD: { name: "RD del Congo", fifaCode: "COD", isoCode: "cd", group: "K" },
+  UZB: { name: "Uzbekistán", fifaCode: "UZB", isoCode: "uz", group: "K" },
+  COL: { name: "Colombia", fifaCode: "COL", isoCode: "co", group: "K" },
 
-  // ───── Grupo L (Estadio Akron, Guadalajara)
-  GER: { name: "Alemania", fifaCode: "GER", isoCode: "de", group: "L" },
-  DEN: { name: "Dinamarca", fifaCode: "DEN", isoCode: "dk", group: "L" },
-  NGA: { name: "Nigeria", fifaCode: "NGA", isoCode: "ng", group: "L" },
-  COD: { name: "RD del Congo", fifaCode: "COD", isoCode: "cd", group: "L" },
+  // ───── Grupo L
+  ENG: { name: "Inglaterra", fifaCode: "ENG", isoCode: "gb-eng", group: "L" },
+  CRO: { name: "Croacia", fifaCode: "CRO", isoCode: "hr", group: "L" },
+  GHA: { name: "Ghana", fifaCode: "GHA", isoCode: "gh", group: "L" },
+  PAN: { name: "Panamá", fifaCode: "PAN", isoCode: "pa", group: "L" },
 }
 
 export function getTeamByCode(code: string): TeamInfo | null {
