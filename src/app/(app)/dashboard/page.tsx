@@ -6,6 +6,7 @@ import Link from "next/link"
 import type { Profile, Match } from "@/types/database"
 import LeagueIcon from "@/components/LeagueIcon"
 import TeamFlag from "@/components/TeamFlag"
+import DailyChallenge from "@/components/DailyChallenge"
 import { getLocale } from "@/lib/get-locale"
 
 export default async function DashboardPage() {
@@ -117,6 +118,9 @@ export default async function DashboardPage() {
           {successfulPredictions} de {totalPredictions} predicciones acertadas
         </div>
       )}
+
+      {/* Desafío diario — solo aparece si hay partidos hoy */}
+      <DailyChallenge />
 
       <section className="mb-8">
         <div className="flex items-center justify-between mb-4">

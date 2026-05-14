@@ -1,10 +1,11 @@
 name: Recordatorios de predicción
 
-# Corre cada 5 minutos para avisar a quienes no predijeron partidos por arrancar.
+# DESACTIVADO hasta que tengas Vercel configurado con secrets.
+# Activar cuando el Mundial empiece, descomentando el bloque schedule.
 
 on:
-  schedule:
-    - cron: "*/5 * * * *"
+  # schedule:
+  #   - cron: "*/5 * * * *"
   workflow_dispatch:
 
 jobs:
@@ -12,7 +13,14 @@ jobs:
     name: Mandar notificaciones a quien no predijo
     runs-on: ubuntu-latest
     steps:
+      - name: Validar secrets
+        run: |
+          if [ -z "${{ secrets.APP_URL }}" ] || [ -z "${{ secrets.SUPABASE_SERVICE_KEY }}" ]; then
+            echo "::warning::Secrets no configurados. Saltando."
+            exit 0
+          fi
       - name: Llamar al endpoint de recordatorios
+        if: ${{ secrets.APP_URL != '' && secrets.SUPABASE_SERVICE_KEY != '' }}
         run: |
           curl -X GET "${{ secrets.APP_URL }}/api/cron/prediction-reminders" \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_KEY }}" \
