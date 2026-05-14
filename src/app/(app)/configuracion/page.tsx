@@ -15,9 +15,11 @@ import {
   Loader2,
   Mail,
   Edit3,
+  Palette,
 } from "lucide-react"
 import Link from "next/link"
 import Avatar from "@/components/Avatar"
+import ThemeToggle from "@/components/ThemeToggle"
 
 type Profile = {
   username: string
@@ -134,6 +136,15 @@ export default function ConfiguracionPage() {
           </div>
           <ChevronRight size={16} className="text-gray-500 group-hover:text-white transition-colors" />
         </button>
+      </Section>
+
+      {/* Apariencia */}
+      <Section icon={Palette} title="Apariencia">
+        <div className="p-3">
+          <p className="text-white text-sm font-medium mb-1">Tema de la app</p>
+          <p className="text-gray-500 text-xs mb-3">El modo oscuro es la experiencia recomendada</p>
+          <ThemeToggle />
+        </div>
       </Section>
 
       {/* Notificaciones */}

@@ -8,6 +8,7 @@ import LeagueIcon from "@/components/LeagueIcon"
 import ActivityFeed from "@/components/leagues/ActivityFeed"
 import LeaderboardTable from "@/components/leagues/LeaderboardTable"
 import ShareButton from "@/components/ShareButton"
+import LeaveLeagueButton from "@/components/leagues/LeaveLeagueButton"
 
 type League = {
   id: string
@@ -184,6 +185,13 @@ export default async function LigaDetailPage({ params }: { params: Promise<{ id:
         </div>
         <ActivityFeed activities={activities} />
       </section>
+
+      {/* Salir de la liga — solo miembros no-creadores, no liga global */}
+      {isMember && !isCreator && league.type !== "global" && (
+        <div className="mt-12 text-center">
+          <LeaveLeagueButton leagueId={league.id} leagueName={league.name} />
+        </div>
+      )}
     </main>
   )
 }

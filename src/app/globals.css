@@ -1,16 +1,16 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme inline {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
-  /* Golazo brand colors */
   --color-brand: #16a34a;
   --color-brand-dark: #15803d;
   --color-accent: #facc15;
   --color-accent-dark: #eab308;
 
-  /* shadcn CSS variables mapped to Tailwind v4 */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -35,6 +35,7 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* ===== Dark mode (default) ===== */
 :root {
   --radius: 0.625rem;
   --background: oklch(0.08 0.01 240);
@@ -57,6 +58,28 @@
   --ring: oklch(0.55 0.18 145);
 }
 
+/* ===== Light mode (cuando next-themes pone class="light") ===== */
+.light {
+  --background: oklch(0.98 0 0);
+  --foreground: oklch(0.15 0.01 240);
+  --card: oklch(0.96 0 0);
+  --card-foreground: oklch(0.15 0.01 240);
+  --popover: oklch(0.98 0 0);
+  --popover-foreground: oklch(0.15 0.01 240);
+  --primary: oklch(0.55 0.18 145);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.94 0.01 240);
+  --secondary-foreground: oklch(0.15 0.01 240);
+  --muted: oklch(0.94 0.01 240);
+  --muted-foreground: oklch(0.45 0.01 240);
+  --accent: oklch(0.94 0.01 240);
+  --accent-foreground: oklch(0.15 0.01 240);
+  --destructive: oklch(0.55 0.22 25);
+  --border: oklch(0.88 0.01 240);
+  --input: oklch(0.88 0.01 240);
+  --ring: oklch(0.55 0.18 145);
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
@@ -64,6 +87,35 @@ body {
   min-height: 100vh;
 }
 
-* {
-  border-color: var(--border);
-}
+/* En light mode, suavizamos las superficies translucidas/blancas
+   que usan los componentes ('bg-white/5', 'border-white/10', etc).
+   Esto hace que el modo claro sea funcional sin refactorizar 30 archivos. */
+.light .bg-white\/5 { background-color: rgba(0, 0, 0, 0.04); }
+.light .bg-white\/10 { background-color: rgba(0, 0, 0, 0.06); }
+.light .bg-white\/\[0\.02\] { background-color: rgba(0, 0, 0, 0.02); }
+.light .bg-white\/\[0\.03\] { background-color: rgba(0, 0, 0, 0.03); }
+.light .bg-white\/\[0\.07\] { background-color: rgba(0, 0, 0, 0.05); }
+.light .hover\:bg-white\/5:hover { background-color: rgba(0, 0, 0, 0.04); }
+.light .hover\:bg-white\/10:hover { background-color: rgba(0, 0, 0, 0.06); }
+.light .hover\:bg-white\/15:hover { background-color: rgba(0, 0, 0, 0.08); }
+.light .border-white\/5 { border-color: rgba(0, 0, 0, 0.05); }
+.light .border-white\/10 { border-color: rgba(0, 0, 0, 0.08); }
+.light .border-white\/15 { border-color: rgba(0, 0, 0, 0.12); }
+.light .border-white\/20 { border-color: rgba(0, 0, 0, 0.15); }
+.light .hover\:border-white\/20:hover { border-color: rgba(0, 0, 0, 0.15); }
+
+/* Texto: en lugar de blanco puro, gris muy oscuro */
+.light .text-white { color: oklch(0.15 0.01 240); }
+.light .text-gray-300 { color: oklch(0.25 0.01 240); }
+.light .text-gray-400 { color: oklch(0.4 0.01 240); }
+.light .text-gray-500 { color: oklch(0.5 0.01 240); }
+.light .text-gray-600 { color: oklch(0.55 0.01 240); }
+.light .text-gray-700 { color: oklch(0.65 0.01 240); }
+
+/* Fondos negros oscuros */
+.light .bg-black { background-color: oklch(0.98 0 0); }
+.light .bg-black\/30 { background-color: rgba(0, 0, 0, 0.03); }
+.light .bg-black\/40 { background-color: rgba(0, 0, 0, 0.04); }
+.light .bg-black\/60 { background-color: rgba(255, 255, 255, 0.6); }
+.light .bg-black\/80 { background-color: rgba(255, 255, 255, 0.85); }
+.light .bg-black\/95 { background-color: rgba(255, 255, 255, 0.95); }
