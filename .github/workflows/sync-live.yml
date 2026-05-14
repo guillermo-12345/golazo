@@ -1,7 +1,8 @@
 name: Sincronizar scores en vivo
 
-# Corre cada 5 min. El endpoint internamente salta si no hay partidos
-# en vivo ni proximos en 1h, asi que no consume API-Football fuera del Mundial.
+# Llama al endpoint /api/cron/sync-live (wrapper inteligente) que internamente
+# salta si no hay partidos en vivo ni programados en la proxima hora, asi que
+# no consume cuota de API-Football fuera del Mundial.
 
 on:
   schedule:
@@ -22,6 +23,5 @@ jobs:
             echo "::warning::Secrets APP_URL o SUPABASE_SERVICE_KEY no configurados. Saltando."
             exit 0
           fi
-          curl --fail-with-body -X POST "$APP_URL/api/matches/sync?live=1" \
-            -H "Authorization: Bearer $SUPABASE_KEY" \
-            -H "Content-Type: application/json"
+          curl --fail-with-body -X GET "$APP_URL/api/cron/sync-live" \
+            -H "Authorization: Bearer $SUPABASE_KEY"
