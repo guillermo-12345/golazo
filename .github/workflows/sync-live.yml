@@ -1,12 +1,16 @@
 name: Sincronizar scores en vivo
 
-# Llama al endpoint /api/cron/sync-live (wrapper inteligente) que internamente
-# salta si no hay partidos en vivo ni programados en la proxima hora, asi que
-# no consume cuota de API-Football fuera del Mundial.
+# DESACTIVADO el schedule porque hasta que tengamos API-Football key real
+# y todo verificado, no hace falta correr esto automaticamente.
+#
+# Para activar (1 semana antes del Mundial):
+# 1. Verificar que APP_URL y SUPABASE_SERVICE_KEY en GitHub Secrets coinciden con Vercel
+# 2. Descomentar el bloque schedule abajo
+# 3. Push
 
 on:
-  schedule:
-    - cron: "*/5 * * * *"
+  # schedule:
+  #   - cron: "*/5 * * * *"
   workflow_dispatch:
 
 jobs:
@@ -20,8 +24,16 @@ jobs:
           SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: |
           if [ -z "$APP_URL" ] || [ -z "$SUPABASE_KEY" ]; then
-            echo "::warning::Secrets APP_URL o SUPABASE_SERVICE_KEY no configurados. Saltando."
+            echo "::warning::Secrets APP_URL o SUPABASE_SERVICE_KEY no configurados."
             exit 0
           fi
-          curl --fail-with-body -X GET "$APP_URL/api/cron/sync-live" \
-            -H "Authorization: Bearer $SUPABASE_KEY"
+          echo "Calling: $APP_URL/api/cron/sync-live"
+          HTTP_CODE=$(curl -s -o /tmp/response.txt -w "%{http_code}" \
+            -X GET "$APP_URL/api/cron/sync-live" \
+            -H "Authorization: Bearer $SUPABASE_KEY")
+          echo "HTTP $HTTP_CODE"
+          echo "Response:"
+          cat /tmp/response.txt
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+            exit 1
+          fi
