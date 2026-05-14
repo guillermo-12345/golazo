@@ -5,8 +5,10 @@ import Link from "next/link"
 import type { Match } from "@/types/database"
 import PredictionForm from "@/components/predictions/PredictionForm"
 import PredictionsSocialFeed from "@/components/predictions/PredictionsSocialFeed"
+import MatchPredictionStats from "@/components/predictions/MatchPredictionStats"
 import TeamFlag from "@/components/TeamFlag"
 import LocalDateTime from "@/components/LocalDateTime"
+import ShareButton from "@/components/ShareButton"
 
 export default async function PartidoDetailPage({
   params,
@@ -71,13 +73,20 @@ export default async function PartidoDetailPage({
 
   return (
     <main className="max-w-2xl mx-auto px-4 md:px-8 py-8">
-      <Link
-        href="/partidos"
-        className="inline-flex items-center gap-2 text-gray-500 hover:text-white text-sm mb-6 transition-colors"
-      >
-        <ArrowLeft size={16} />
-        Volver
-      </Link>
+      <div className="flex items-center justify-between mb-6">
+        <Link
+          href="/partidos"
+          className="inline-flex items-center gap-2 text-gray-500 hover:text-white text-sm transition-colors"
+        >
+          <ArrowLeft size={16} />
+          Volver
+        </Link>
+        <ShareButton
+          title={`${match.home_team} vs ${match.away_team}`}
+          text={`${match.home_team} vs ${match.away_team} - Mundial 2026. ¡Predecí el resultado en Golazo!`}
+          variant="compact"
+        />
+      </div>
 
       {/* Header del partido */}
       <div className="bg-white/5 border border-white/10 rounded-3xl p-6 mb-6">
@@ -141,6 +150,20 @@ export default async function PartidoDetailPage({
           existingPreds={existingPreds}
           isLocked={isLocked}
         />
+      )}
+
+      {/* Stats de predicciones — solo visible si ya predijiste o el partido cerró */}
+      {validLeagues.length > 0 && (existingPreds.length > 0 || isLocked) && (
+        <section className="mt-6">
+          <MatchPredictionStats
+            matchId={match.id}
+            leagueId={validLeagues[0].id}
+            homeCode={match.home_team_code}
+            awayCode={match.away_team_code}
+            homeName={match.home_team}
+            awayName={match.away_team}
+          />
+        </section>
       )}
 
       {/* Feed social — solo cuando ya cerró el pronóstico */}

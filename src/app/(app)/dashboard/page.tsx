@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { formatDistanceToNow } from "date-fns"
 import { es } from "date-fns/locale"
-import { Trophy, Flame, Target } from "lucide-react"
+import { Trophy, Flame, Target, Award } from "lucide-react"
 import Link from "next/link"
 import type { Profile, Match } from "@/types/database"
 import LeagueIcon from "@/components/LeagueIcon"
@@ -11,7 +11,7 @@ export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const [profileRes, matchesRes, leaguesRes] = await Promise.all([
+  const [profileRes, matchesRes, leaguesRes, predictionsRes, badgesRes] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user!.id).single(),
     supabase
       .from("matches")
@@ -26,6 +26,12 @@ export default async function DashboardPage() {
       .eq("user_id", user!.id)
       .order("points", { ascending: false })
       .limit(3),
+    supabase
+      .from("predictions")
+      .select("points_earned, match_id")
+      .eq("user_id", user!.id)
+      .not("points_earned", "is", null),
+    supabase.from("badges").select("badge_type").eq("user_id", user!.id),
   ])
 
   const profile = profileRes.data as Profile | null
@@ -44,6 +50,27 @@ export default async function DashboardPage() {
     } | null
   }>
 
+  // Calcular stats personales
+  const predictions = (predictionsRes.data ?? []) as Array<{
+    points_earned: number | null
+    match_id: string
+  }>
+  const totalPoints = myLeagues.reduce((sum, m) => sum + m.points, 0)
+  const totalPredictions = predictions.length
+  const successfulPredictions = predictions.filter((p) => (p.points_earned ?? 0) > 0).length
+  const effectiveness =
+    totalPredictions > 0 ? Math.round((successfulPredictions / totalPredictions) * 100) : 0
+
+  // Racha actual: predicciones consecutivas con puntos > 0
+  // TODO: ordenar por fecha de partido (necesita join con matches)
+  let streak = 0
+  for (const p of predictions) {
+    if ((p.points_earned ?? 0) > 0) streak++
+    else break
+  }
+
+  const badgesCount = (badgesRes.data ?? []).length
+
   return (
     <main className="max-w-4xl mx-auto px-4 md:px-8 py-8">
       <div className="mb-8">
@@ -53,23 +80,37 @@ export default async function DashboardPage() {
         <p className="text-gray-500 mt-1">¿Listo para predecir los próximos partidos?</p>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
         <div className="bg-white/5 border border-white/10 rounded-2xl p-4 text-center">
           <Trophy size={20} className="text-yellow-400 mx-auto mb-2" />
-          <p className="text-2xl font-black text-white">0</p>
+          <p className="text-2xl font-black text-white">{totalPoints}</p>
           <p className="text-xs text-gray-500">Puntos totales</p>
         </div>
         <div className="bg-white/5 border border-white/10 rounded-2xl p-4 text-center">
           <Flame size={20} className="text-orange-400 mx-auto mb-2" />
-          <p className="text-2xl font-black text-white">0</p>
+          <p className="text-2xl font-black text-white">{streak}</p>
           <p className="text-xs text-gray-500">Racha actual</p>
         </div>
         <div className="bg-white/5 border border-white/10 rounded-2xl p-4 text-center">
           <Target size={20} className="text-green-400 mx-auto mb-2" />
-          <p className="text-2xl font-black text-white">0%</p>
+          <p className="text-2xl font-black text-white">{effectiveness}%</p>
           <p className="text-xs text-gray-500">Efectividad</p>
         </div>
+        <Link
+          href="/perfil"
+          className="bg-white/5 border border-white/10 hover:border-purple-500/30 rounded-2xl p-4 text-center transition-colors"
+        >
+          <Award size={20} className="text-purple-400 mx-auto mb-2" />
+          <p className="text-2xl font-black text-white">{badgesCount}</p>
+          <p className="text-xs text-gray-500">Logros</p>
+        </Link>
       </div>
+
+      {totalPredictions > 0 && (
+        <div className="text-xs text-gray-600 text-center mb-6 -mt-4">
+          {successfulPredictions} de {totalPredictions} predicciones acertadas
+        </div>
+      )}
 
       <section className="mb-8">
         <div className="flex items-center justify-between mb-4">

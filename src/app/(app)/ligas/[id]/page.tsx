@@ -7,6 +7,7 @@ import JoinLeagueButton from "@/components/leagues/JoinLeagueButton"
 import LeagueIcon from "@/components/LeagueIcon"
 import ActivityFeed from "@/components/leagues/ActivityFeed"
 import LeaderboardTable from "@/components/leagues/LeaderboardTable"
+import ShareButton from "@/components/ShareButton"
 
 type League = {
   id: string
@@ -71,15 +72,27 @@ export default async function LigaDetailPage({ params }: { params: Promise<{ id:
     created_at: string
   }>
 
+  const shareText =
+    league.type === "private" && league.invite_code
+      ? `Te invito a jugar conmigo en la liga "${league.name}" en Golazo. Código: ${league.invite_code}`
+      : `Sumate a la liga "${league.name}" en Golazo`
+
   return (
     <main className="max-w-4xl mx-auto px-4 md:px-8 py-8">
-      <Link
-        href="/ligas"
-        className="inline-flex items-center gap-2 text-gray-500 hover:text-white text-sm mb-6 transition-colors"
-      >
-        <ArrowLeft size={16} />
-        Volver a ligas
-      </Link>
+      <div className="flex items-center justify-between mb-6">
+        <Link
+          href="/ligas"
+          className="inline-flex items-center gap-2 text-gray-500 hover:text-white text-sm transition-colors"
+        >
+          <ArrowLeft size={16} />
+          Volver a ligas
+        </Link>
+        <ShareButton
+          title={`Liga "${league.name}" en Golazo`}
+          text={shareText}
+          variant="compact"
+        />
+      </div>
 
       {/* Banner */}
       <div
