@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Calendar, Trophy, GitBranch, User, LogOut, Grid3X3, CalendarDays } from "lucide-react"
+import { LayoutDashboard, Trophy, GitBranch, User, LogOut, Grid3X3, CalendarDays, BarChart3, Settings } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import type { Profile } from "@/types/database"
@@ -16,6 +16,16 @@ const NAV_ITEMS = [
   { href: "/grupos", icon: Grid3X3, label: "Grupos" },
   { href: "/ligas", icon: Trophy, label: "Ligas" },
   { href: "/bracket", icon: GitBranch, label: "Bracket" },
+  { href: "/ranking", icon: BarChart3, label: "Ranking" },
+  { href: "/perfil", icon: User, label: "Perfil" },
+]
+
+// Mobile bottom nav (mostramos solo los 5 mas importantes para no apretar tanto)
+const MOBILE_NAV_ITEMS = [
+  { href: "/dashboard", icon: LayoutDashboard, label: "Inicio" },
+  { href: "/calendario", icon: CalendarDays, label: "Calendario" },
+  { href: "/grupos", icon: Grid3X3, label: "Grupos" },
+  { href: "/ligas", icon: Trophy, label: "Ligas" },
   { href: "/perfil", icon: User, label: "Perfil" },
 ]
 
@@ -75,13 +85,23 @@ export default function DashboardNav({ profile }: { profile: Profile }) {
 
         {/* Perfil en sidebar */}
         <div className="border-t border-white/10 pt-4 mt-4">
-          <div className="flex items-center gap-3 px-2 mb-3">
+          <Link
+            href={`/u/${profile.username}`}
+            className="flex items-center gap-3 px-2 mb-3 hover:bg-white/5 -mx-1 py-2 rounded-xl transition-colors"
+          >
             <Avatar config={profile.avatar_config} username={profile.username} size={36} />
             <div className="flex-1 min-w-0">
               <p className="text-white text-sm font-medium truncate">{profile.display_name}</p>
               <p className="text-gray-600 text-xs">@{profile.username}</p>
             </div>
-          </div>
+          </Link>
+          <Link
+            href="/configuracion"
+            className="flex items-center gap-2 px-3 py-2 w-full text-gray-500 hover:text-white text-sm rounded-xl hover:bg-white/5 transition-colors"
+          >
+            <Settings size={16} />
+            Configuración
+          </Link>
           <button
             onClick={handleLogout}
             className="flex items-center gap-2 px-3 py-2 w-full text-gray-600 hover:text-red-400 text-sm rounded-xl hover:bg-white/5 transition-colors"
@@ -94,7 +114,7 @@ export default function DashboardNav({ profile }: { profile: Profile }) {
 
       {/* Bottom nav — mobile */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-black/80 backdrop-blur-xl border-t border-white/10 flex items-center justify-around px-2 py-2">
-        {NAV_ITEMS.map((item) => {
+        {MOBILE_NAV_ITEMS.map((item) => {
           const active = pathname === item.href || pathname.startsWith(item.href + "/")
           return (
             <Link

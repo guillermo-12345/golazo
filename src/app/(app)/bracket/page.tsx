@@ -1,57 +1,114 @@
-import { GitBranch, Trophy, Lock } from "lucide-react"
+import { createClient } from "@/lib/supabase/server"
+import BracketForm from "@/components/bracket/BracketForm"
+import { GitBranch, Lock, Trophy } from "lucide-react"
+import { redirect } from "next/navigation"
 
-export default function BracketPage() {
+export default async function BracketPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect("/login")
+
+  // Ligas del usuario donde podemos guardar el bracket
+  const { data: leaguesData } = await supabase
+    .from("league_members")
+    .select("league_id, leagues(id, name, banner_color, config)")
+    .eq("user_id", user.id)
+
+  const leagues = (leaguesData ?? []) as unknown as Array<{
+    league_id: string
+    leagues: {
+      id: string
+      name: string
+      banner_color: string
+      config: { allowBracketChallenge?: boolean } | null
+    } | null
+  }>
+
+  const validLeagues = leagues
+    .filter((l) => l.leagues && l.leagues.config?.allowBracketChallenge !== false)
+    .map((l) => l.leagues!)
+
+  // Bracket predictions existentes
+  const { data: bracketData } = await supabase
+    .from("bracket_predictions")
+    .select("*")
+    .eq("user_id", user.id)
+
+  const existingBrackets = (bracketData ?? []) as Array<{
+    league_id: string
+    bracket_data: {
+      champion?: string
+      runnerUp?: string
+      thirdPlace?: string
+      fourthPlace?: string
+      topScorer?: string
+    }
+    points_earned: number
+  }>
+
+  // Cierre del bracket: el día antes del inicio del Mundial (10 jun 2026)
+  const bracketDeadline = new Date("2026-06-10T23:59:59Z")
+  const isLocked = new Date() > bracketDeadline
+
   return (
     <main className="max-w-3xl mx-auto px-4 md:px-8 py-8">
       <header className="mb-8">
-        <h1 className="text-2xl md:text-3xl font-black text-white">Bracket Challenge</h1>
-        <p className="text-gray-500 mt-1 text-sm">Predecí el cuadro completo del Mundial</p>
+        <div className="flex items-center gap-3 mb-2">
+          <GitBranch size={28} className="text-yellow-400" />
+          <h1 className="text-2xl md:text-3xl font-black text-white">Bracket Challenge</h1>
+        </div>
+        <p className="text-gray-500 text-sm">
+          Predecí el podio del Mundial 2026 antes de que arranque. Cada acierto suma puntos a tu liga.
+        </p>
       </header>
 
-      <div className="bg-gradient-to-br from-yellow-500/10 to-orange-500/5 border border-yellow-500/20 rounded-3xl p-8 text-center">
-        <div className="w-16 h-16 bg-yellow-500/20 border border-yellow-500/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <GitBranch size={28} className="text-yellow-400" />
-        </div>
-        <h2 className="text-xl font-black text-white mb-2">Próximamente</h2>
-        <p className="text-gray-400 text-sm max-w-md mx-auto">
-          Cuando se sortee el cuadro del Mundial (diciembre 2025), vas a poder predecir todo el
-          recorrido: quién avanza de cada grupo, semifinales, final y campeón.
-        </p>
-
-        <div className="grid grid-cols-3 gap-3 mt-8 max-w-md mx-auto">
-          <BracketStat label="Puntos por grupo" value="2" />
-          <BracketStat label="Por semifinal" value="10" />
-          <BracketStat label="Por campeón" value="50" />
-        </div>
-
-        <div className="inline-flex items-center gap-2 mt-8 bg-white/5 border border-white/10 rounded-full px-4 py-2">
-          <Lock size={14} className="text-gray-500" />
-          <span className="text-gray-400 text-sm">Disponible tras el sorteo</span>
-        </div>
-      </div>
-
-      {/* Preview */}
-      <div className="mt-8 bg-white/5 border border-white/10 rounded-2xl p-6">
-        <div className="flex items-center gap-2 mb-4">
+      {/* Tabla de puntos */}
+      <div className="bg-gradient-to-br from-yellow-500/10 to-orange-500/5 border border-yellow-500/20 rounded-2xl p-5 mb-6">
+        <div className="flex items-center gap-2 mb-3">
           <Trophy size={16} className="text-yellow-400" />
-          <h3 className="text-white font-bold">¿Cómo funciona?</h3>
+          <h2 className="text-white font-bold text-sm">Cómo se puntúa</h2>
         </div>
-        <ul className="space-y-2 text-sm text-gray-400">
-          <li>· Antes de que arranque el Mundial, completás todo el bracket</li>
-          <li>· Cada predicción acertada (qué selección avanza) suma puntos</li>
-          <li>· Los puntos del bracket se acumulan en cada liga donde estés</li>
-          <li>· Los aciertos en rondas finales valen mucho más que los de grupos</li>
-        </ul>
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
+          <ScoreCard label="Campeón" pts={50} emoji="🥇" />
+          <ScoreCard label="Subcampeón" pts={25} emoji="🥈" />
+          <ScoreCard label="3er puesto" pts={15} emoji="🥉" />
+          <ScoreCard label="4to puesto" pts={10} emoji="4️⃣" />
+          <ScoreCard label="Goleador" pts={25} emoji="⚽" />
+        </div>
+        <p className="text-xs text-gray-500 mt-3 text-center">
+          Máximo posible: <span className="text-yellow-400 font-bold">125 puntos</span>
+        </p>
       </div>
+
+      {isLocked && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-5 mb-6 text-center">
+          <Lock size={24} className="text-red-400 mx-auto mb-2" />
+          <p className="text-white font-bold">El bracket está cerrado</p>
+          <p className="text-gray-400 text-sm mt-1">Cerró el 10 de junio antes del inicio del Mundial</p>
+        </div>
+      )}
+
+      {validLeagues.length === 0 ? (
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center">
+          <p className="text-gray-400">Tenés que estar en alguna liga para hacer el bracket</p>
+        </div>
+      ) : (
+        <BracketForm
+          leagues={validLeagues}
+          existingBrackets={existingBrackets}
+          isLocked={isLocked}
+        />
+      )}
     </main>
   )
 }
 
-function BracketStat({ label, value }: { label: string; value: string }) {
+function ScoreCard({ label, pts, emoji }: { label: string; pts: number; emoji: string }) {
   return (
-    <div className="bg-black/30 border border-white/5 rounded-xl p-3">
-      <p className="text-2xl font-black text-yellow-400">{value}</p>
-      <p className="text-xs text-gray-500">{label}</p>
+    <div className="bg-black/30 border border-white/5 rounded-xl p-2.5">
+      <div className="text-xl mb-1">{emoji}</div>
+      <p className="text-yellow-400 font-black text-base">+{pts}</p>
+      <p className="text-gray-500 text-[10px] uppercase tracking-wider">{label}</p>
     </div>
   )
 }
