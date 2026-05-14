@@ -140,7 +140,9 @@ export default function LandingPage() {
       </section>
 
       <footer className="border-t border-white/10 px-6 py-6 text-center">
-        <p className="text-gray-600 text-sm">© 2026 Golazo · Hecho con pasión por el fútbol</p>
+        <p className="text-gray-600 text-sm">
+          Desarrollado con ❤ por <span className="text-gray-300 font-semibold">Guillermo Ibañez</span> · © 2026 Golazo
+        </p>
       </footer>
     </main>
   )

@@ -1,10 +1,9 @@
 import { createClient } from "@/lib/supabase/server"
 import { Calendar, Clock } from "lucide-react"
 import Link from "next/link"
-import { format } from "date-fns"
-import { es } from "date-fns/locale"
 import type { Match } from "@/types/database"
 import TeamFlag from "@/components/TeamFlag"
+import LocalDateTime from "@/components/LocalDateTime"
 
 export default async function PartidosPage() {
   const supabase = await createClient()
@@ -81,7 +80,7 @@ function MatchList({ matches }: { matches: Match[] }) {
             <span>{m.stage}</span>
             <span className="flex items-center gap-1">
               <Clock size={12} />
-              {format(new Date(m.scheduled_at), "d MMM · HH:mm", { locale: es })}
+              <LocalDateTime date={m.scheduled_at} formatStr="d MMM · HH:mm" />
             </span>
           </div>
           <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">

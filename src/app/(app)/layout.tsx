@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import DashboardNav from "@/components/layout/DashboardNav"
+import Footer from "@/components/Footer"
 import type { Profile } from "@/types/database"
 
 export const dynamic = "force-dynamic"
@@ -27,8 +28,9 @@ export default async function AppLayout({
   return (
     <div className="min-h-screen flex flex-col">
       <DashboardNav profile={profile} />
-      <div className="flex-1 pt-14 md:pt-0 pb-20 md:pb-0 md:pl-64">
-        {children}
+      <div className="flex-1 pt-14 md:pt-0 pb-20 md:pb-0 md:pl-64 flex flex-col">
+        <div className="flex-1">{children}</div>
+        <Footer />
       </div>
     </div>
   )

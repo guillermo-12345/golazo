@@ -2,12 +2,11 @@ import { createClient } from "@/lib/supabase/server"
 import { notFound } from "next/navigation"
 import { ArrowLeft, Clock, MapPin, Users } from "lucide-react"
 import Link from "next/link"
-import { format } from "date-fns"
-import { es } from "date-fns/locale"
 import type { Match } from "@/types/database"
 import PredictionForm from "@/components/predictions/PredictionForm"
 import PredictionsSocialFeed from "@/components/predictions/PredictionsSocialFeed"
 import TeamFlag from "@/components/TeamFlag"
+import LocalDateTime from "@/components/LocalDateTime"
 
 export default async function PartidoDetailPage({
   params,
@@ -110,10 +109,10 @@ export default async function PartidoDetailPage({
             <p className="text-white font-bold group-hover:text-green-400 transition-colors">{match.away_team}</p>
           </Link>
         </div>
-        <div className="flex items-center justify-center gap-4 mt-4 text-xs text-gray-500">
+        <div className="flex items-center justify-center gap-4 mt-4 text-xs text-gray-500 flex-wrap">
           <span className="flex items-center gap-1">
             <Clock size={12} />
-            {format(new Date(match.scheduled_at), "EEEE d 'de' MMMM · HH:mm", { locale: es })}
+            <LocalDateTime date={match.scheduled_at} formatStr="EEEE d 'de' MMMM · HH:mm" showTz />
           </span>
           {match.venue && (
             <span className="flex items-center gap-1">

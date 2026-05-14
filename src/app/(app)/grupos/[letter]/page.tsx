@@ -4,9 +4,8 @@ import { calculateGroupStandings } from "@/lib/standings"
 import type { Match } from "@/types/database"
 import Link from "next/link"
 import TeamFlag from "@/components/TeamFlag"
+import LocalDateTime from "@/components/LocalDateTime"
 import { ArrowLeft, Trophy, Calendar, Clock } from "lucide-react"
-import { format } from "date-fns"
-import { es } from "date-fns/locale"
 import { notFound } from "next/navigation"
 
 export default async function GrupoDetailPage({
@@ -186,7 +185,7 @@ function MatchRow({ match, finished }: { match: Match; finished?: boolean }) {
       <div className="flex items-center justify-between mb-1.5 text-xs text-gray-500">
         <span className="flex items-center gap-1">
           <Clock size={11} />
-          {format(new Date(match.scheduled_at), "d MMM · HH:mm", { locale: es })}
+          <LocalDateTime date={match.scheduled_at} formatStr="d MMM · HH:mm" />
         </span>
         {match.venue && <span className="truncate ml-2">{match.venue}</span>}
       </div>
