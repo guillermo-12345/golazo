@@ -1,10 +1,13 @@
 name: Sincronizar partidos con API-Football
 
-# DESACTIVADO hasta que tengas API-Football key configurada.
-# Para activar:
-# 1. Settings -> Secrets and variables -> Actions -> agregar APP_URL y SUPABASE_SERVICE_KEY
-# 2. Descomentar el bloque "schedule:" de abajo
-# Mientras tanto, podés ejecutarlo manualmente desde Actions -> "Run workflow"
+# IMPORTANTE: este workflow llama a API-Football, que requiere una key real
+# (no la 'placeholder'). Si la activás antes de tener la key, va a fallar
+# cada 6 horas con error 403/401.
+#
+# Cuando obtengas la key:
+# 1. Actualizá API_FOOTBALL_KEY en Vercel
+# 2. Descomentá el bloque schedule abajo
+# 3. Listo
 
 on:
   # schedule:

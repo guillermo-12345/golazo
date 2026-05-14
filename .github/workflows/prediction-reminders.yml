@@ -1,11 +1,11 @@
 name: Recordatorios de predicción
 
-# DESACTIVADO hasta que tengas Vercel configurado con secrets.
-# Activar cuando el Mundial empiece, descomentando el bloque schedule.
+# Activado: corre cada 5 min pero el endpoint internamente solo manda notificaciones
+# si hay partidos que arrancan en ~15 minutos. Hasta el Mundial no manda nada.
 
 on:
-  # schedule:
-  #   - cron: "*/5 * * * *"
+  schedule:
+    - cron: "*/5 * * * *"
   workflow_dispatch:
 
 jobs:
