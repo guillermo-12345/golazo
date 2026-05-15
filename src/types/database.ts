@@ -139,6 +139,53 @@ export type Database = {
           extra_data?: Json
         }
       }
+      qualifier_matches: {
+        Row: {
+          id: string
+          api_fixture_id: number
+          confederation: string
+          league_round: string | null
+          home_team: string
+          away_team: string
+          home_team_logo: string | null
+          away_team_logo: string | null
+          home_team_code: string | null
+          away_team_code: string | null
+          scheduled_at: string
+          status: "scheduled" | "live" | "finished" | "postponed"
+          home_score: number | null
+          away_score: number | null
+          venue: string | null
+          extra_data: Json
+          synced_at: string
+        }
+        Insert: {
+          id?: string
+          api_fixture_id: number
+          confederation: string
+          league_round?: string | null
+          home_team: string
+          away_team: string
+          home_team_logo?: string | null
+          away_team_logo?: string | null
+          home_team_code?: string | null
+          away_team_code?: string | null
+          scheduled_at: string
+          status?: "scheduled" | "live" | "finished" | "postponed"
+          home_score?: number | null
+          away_score?: number | null
+          venue?: string | null
+          extra_data?: Json
+          synced_at?: string
+        }
+        Update: {
+          status?: "scheduled" | "live" | "finished" | "postponed"
+          home_score?: number | null
+          away_score?: number | null
+          extra_data?: Json
+          synced_at?: string
+        }
+      }
       predictions: {
         Row: {
           id: string
@@ -249,6 +296,7 @@ export type Profile = Database["public"]["Tables"]["profiles"]["Row"]
 export type League = Database["public"]["Tables"]["leagues"]["Row"]
 export type LeagueMember = Database["public"]["Tables"]["league_members"]["Row"]
 export type Match = Database["public"]["Tables"]["matches"]["Row"]
+export type QualifierMatch = Database["public"]["Tables"]["qualifier_matches"]["Row"]
 export type Prediction = Database["public"]["Tables"]["predictions"]["Row"]
 export type BracketPrediction = Database["public"]["Tables"]["bracket_predictions"]["Row"]
 export type Badge = Database["public"]["Tables"]["badges"]["Row"]

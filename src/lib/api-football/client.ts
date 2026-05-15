@@ -79,6 +79,39 @@ export async function getTeams(): Promise<APITeam[]> {
   return apiFetch(`/teams?league=${LEAGUE_ID}&season=${DEFAULT_SEASON}`)
 }
 
+/**
+ * Ligas de Eliminatorias al Mundial 2026 a sincronizar.
+ *
+ * Configurable vía env `API_FOOTBALL_QUALIFIER_LEAGUES` con pares
+ * `leagueId:season` separados por coma. Ej:
+ *   API_FOOTBALL_QUALIFIER_LEAGUES="32:2026,34:2026,29:2026,30:2026,31:2026,33:2026,37:2026"
+ *
+ * IMPORTANTE: los IDs de liga dependen de la cuenta/plan de API-Football.
+ * Verificalos en tu dashboard de API-Football antes de sincronizar.
+ * Si la env está vacía, el sync de eliminatorias NO trae nada (cero datos
+ * erróneos por defecto).
+ */
+export function getQualifierLeagueConfigs(): Array<{ league: number; season: number }> {
+  const raw = process.env.API_FOOTBALL_QUALIFIER_LEAGUES?.trim()
+  if (!raw) return []
+  return raw
+    .split(",")
+    .map((pair) => pair.trim())
+    .filter(Boolean)
+    .map((pair) => {
+      const [l, s] = pair.split(":").map((x) => parseInt(x.trim(), 10))
+      return { league: l, season: s }
+    })
+    .filter((c) => Number.isFinite(c.league) && Number.isFinite(c.season))
+}
+
+export async function getQualifierFixtures(
+  league: number,
+  season: number
+): Promise<APIFixture[]> {
+  return apiFetch(`/fixtures?league=${league}&season=${season}`)
+}
+
 const STATUS_MAP: Record<string, "scheduled" | "live" | "finished" | "postponed"> = {
   NS: "scheduled",
   TBD: "scheduled",

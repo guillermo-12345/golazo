@@ -99,6 +99,32 @@ create table public.matches (
 );
 
 -- =============================================
+-- QUALIFIER MATCHES (Preeliminares — solo informativo, ver migración 007)
+-- =============================================
+create table public.qualifier_matches (
+  id uuid primary key default uuid_generate_v4(),
+  api_fixture_id integer unique not null,
+  confederation text not null,
+  league_round text,
+  home_team text not null,
+  away_team text not null,
+  home_team_logo text,
+  away_team_logo text,
+  home_team_code text,
+  away_team_code text,
+  scheduled_at timestamptz not null,
+  status text not null default 'scheduled' check (status in ('scheduled','live','finished','postponed')),
+  home_score integer,
+  away_score integer,
+  venue text,
+  extra_data jsonb not null default '{}'::jsonb,
+  synced_at timestamptz not null default now()
+);
+create index idx_qmatches_home_code on public.qualifier_matches(home_team_code);
+create index idx_qmatches_away_code on public.qualifier_matches(away_team_code);
+create index idx_qmatches_scheduled on public.qualifier_matches(scheduled_at);
+
+-- =============================================
 -- PREDICTIONS
 -- =============================================
 create table public.predictions (
@@ -173,6 +199,7 @@ alter table public.profiles enable row level security;
 alter table public.leagues enable row level security;
 alter table public.league_members enable row level security;
 alter table public.matches enable row level security;
+alter table public.qualifier_matches enable row level security;
 alter table public.predictions enable row level security;
 alter table public.bracket_predictions enable row level security;
 alter table public.badges enable row level security;
@@ -196,6 +223,9 @@ create policy "league_members_update" on public.league_members for update using 
 
 -- Matches: todos pueden leer (son datos públicos del torneo)
 create policy "matches_select" on public.matches for select using (true);
+
+-- Qualifier matches: lectura pública (solo informativo)
+create policy "qmatches_select" on public.qualifier_matches for select using (true);
 
 -- Predictions: el dueño puede crear/editar, todos pueden leer las de ligas donde participan
 create policy "predictions_select" on public.predictions for select using (

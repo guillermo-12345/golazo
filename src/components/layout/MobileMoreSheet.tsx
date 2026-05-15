@@ -4,6 +4,7 @@ import { useEffect } from "react"
 import Link from "next/link"
 import {
   X,
+  Globe,
   GitBranch,
   BarChart3,
   TrendingUp,
@@ -22,6 +23,7 @@ type Props = {
 }
 
 const ITEMS = [
+  { href: "/paises", icon: Globe, label: "Países", color: "text-green-400" },
   { href: "/bracket", icon: GitBranch, label: "Bracket Challenge", color: "text-yellow-400" },
   { href: "/ranking", icon: BarChart3, label: "Ranking global", color: "text-yellow-400" },
   { href: "/estadisticas", icon: TrendingUp, label: "Estadísticas", color: "text-blue-400" },

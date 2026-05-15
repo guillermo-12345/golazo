@@ -139,27 +139,37 @@ export default async function DashboardPage() {
           <div className="space-y-3">
             {upcomingMatches.map((match) => (
               <div key={match.id} className="bg-white/5 border border-white/10 hover:border-green-500/30 rounded-2xl p-4 transition-colors">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  {/* Equipo local: bandera + nombre apilados */}
+                  <div className="flex flex-col items-center gap-1.5 w-16 sm:w-24 shrink-0">
                     <TeamFlag code={match.home_team_code} size={28} />
-                    <div className="text-center flex-1">
-                      <p className="text-xs text-gray-500 mb-1">
-                        {formatDistanceToNow(new Date(match.scheduled_at), { addSuffix: true, locale: es })}
-                      </p>
-                      <p className="text-white font-bold text-sm">vs</p>
-                    </div>
-                    <TeamFlag code={match.away_team_code} size={28} />
+                    <span className="text-xs text-gray-400 font-medium text-center leading-tight line-clamp-2">
+                      {match.home_team}
+                    </span>
                   </div>
+
+                  {/* Centro: tiempo + vs */}
+                  <div className="text-center flex-1 min-w-0">
+                    <p className="text-xs text-gray-500 mb-1">
+                      {formatDistanceToNow(new Date(match.scheduled_at), { addSuffix: true, locale: es })}
+                    </p>
+                    <p className="text-white font-bold text-sm">vs</p>
+                  </div>
+
+                  {/* Equipo visitante: bandera + nombre apilados */}
+                  <div className="flex flex-col items-center gap-1.5 w-16 sm:w-24 shrink-0">
+                    <TeamFlag code={match.away_team_code} size={28} />
+                    <span className="text-xs text-gray-400 font-medium text-center leading-tight line-clamp-2">
+                      {match.away_team}
+                    </span>
+                  </div>
+
                   <Link
                     href={`/partidos/${match.id}`}
-                    className="ml-4 bg-green-500/10 hover:bg-green-500/20 text-green-400 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors"
+                    className="shrink-0 ml-1 sm:ml-2 bg-green-500/10 hover:bg-green-500/20 text-green-400 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors"
                   >
                     Predecir
                   </Link>
-                </div>
-                <div className="flex justify-between mt-2 text-sm text-gray-400 font-medium">
-                  <span className="truncate">{match.home_team}</span>
-                  <span className="truncate text-right">{match.away_team}</span>
                 </div>
               </div>
             ))}

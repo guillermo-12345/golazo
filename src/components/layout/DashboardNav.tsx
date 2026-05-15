@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Trophy, GitBranch, User, LogOut, Grid3X3, CalendarDays, BarChart3, Settings, Search, BookOpen, TrendingUp, History } from "lucide-react"
+import { LayoutDashboard, Trophy, GitBranch, User, LogOut, Grid3X3, CalendarDays, BarChart3, Settings, Search, BookOpen, TrendingUp, History, Globe } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import type { Profile } from "@/types/database"
@@ -17,6 +17,7 @@ const NAV_ITEMS = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Inicio" },
   { href: "/calendario", icon: CalendarDays, label: "Calendario" },
   { href: "/grupos", icon: Grid3X3, label: "Grupos" },
+  { href: "/paises", icon: Globe, label: "Países" },
   { href: "/ligas", icon: Trophy, label: "Ligas" },
   { href: "/bracket", icon: GitBranch, label: "Bracket" },
   { href: "/ranking", icon: BarChart3, label: "Ranking" },
