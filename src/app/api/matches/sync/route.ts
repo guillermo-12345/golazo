@@ -51,7 +51,10 @@ export async function POST(request: Request) {
 
   const url = new URL(request.url)
   const liveOnly = url.searchParams.get("live") === "1"
-  const source = liveOnly ? "live" : "full"
+  const dry = url.searchParams.get("dry") === "1"
+  const seasonParam = url.searchParams.get("season")
+  const seasonOverride = seasonParam ? parseInt(seasonParam) : undefined
+  const source = liveOnly ? "live" : dry ? "dry-run" : "full"
 
   const supabase = createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -67,11 +70,12 @@ export async function POST(request: Request) {
   const logId = (logEntry as { id: string } | null)?.id
 
   try {
-    const fixtures = liveOnly ? await getLiveFixtures() : await getFixtures()
+    const fixtures = liveOnly ? await getLiveFixtures() : await getFixtures(seasonOverride)
     const rows = buildRows(fixtures)
     const finishedCount = rows.filter((r) => r.status === "finished").length
 
-    if (rows.length > 0) {
+    // En modo dry-run NO escribimos a la DB, solo devolvemos el resumen
+    if (!dry && rows.length > 0) {
       const { error } = await supabase
         .from("matches")
         .upsert(rows, { onConflict: "api_fixture_id" })
@@ -84,7 +88,7 @@ export async function POST(request: Request) {
         .from("sync_log")
         .update({
           finished_at: new Date().toISOString(),
-          matches_synced: rows.length,
+          matches_synced: dry ? 0 : rows.length,
           matches_finished: finishedCount,
         })
         .eq("id", logId)
@@ -93,8 +97,18 @@ export async function POST(request: Request) {
     return Response.json({
       ok: true,
       source,
-      synced: rows.length,
+      dry,
+      season: seasonOverride ?? undefined,
+      received: rows.length,
+      synced: dry ? 0 : rows.length,
       finished: finishedCount,
+      sample: dry && rows.length > 0 ? rows.slice(0, 3).map((r) => ({
+        home: r.home_team,
+        away: r.away_team,
+        score: r.status === "finished" ? `${r.home_score}-${r.away_score}` : null,
+        date: r.scheduled_at,
+        stage: r.stage,
+      })) : undefined,
     })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)

@@ -1,6 +1,6 @@
 const BASE_URL = "https://v3.football.api-sports.io"
 const LEAGUE_ID = parseInt(process.env.API_FOOTBALL_LEAGUE_ID ?? "1")
-const SEASON = parseInt(process.env.API_FOOTBALL_SEASON ?? "2026")
+const DEFAULT_SEASON = parseInt(process.env.API_FOOTBALL_SEASON ?? "2026")
 
 async function apiFetch<T>(endpoint: string): Promise<T> {
   const res = await fetch(`${BASE_URL}${endpoint}`, {
@@ -39,8 +39,9 @@ export type APITeam = {
   group: string
 }
 
-export async function getFixtures(): Promise<APIFixture[]> {
-  return apiFetch(`/fixtures?league=${LEAGUE_ID}&season=${SEASON}`)
+export async function getFixtures(seasonOverride?: number): Promise<APIFixture[]> {
+  const season = seasonOverride ?? DEFAULT_SEASON
+  return apiFetch(`/fixtures?league=${LEAGUE_ID}&season=${season}`)
 }
 
 export async function getFixtureById(fixtureId: number): Promise<APIFixture[]> {
@@ -48,11 +49,11 @@ export async function getFixtureById(fixtureId: number): Promise<APIFixture[]> {
 }
 
 export async function getLiveFixtures(): Promise<APIFixture[]> {
-  return apiFetch(`/fixtures?league=${LEAGUE_ID}&season=${SEASON}&live=all`)
+  return apiFetch(`/fixtures?league=${LEAGUE_ID}&season=${DEFAULT_SEASON}&live=all`)
 }
 
 export async function getTeams(): Promise<APITeam[]> {
-  return apiFetch(`/teams?league=${LEAGUE_ID}&season=${SEASON}`)
+  return apiFetch(`/teams?league=${LEAGUE_ID}&season=${DEFAULT_SEASON}`)
 }
 
 const STATUS_MAP: Record<string, "scheduled" | "live" | "finished" | "postponed"> = {
