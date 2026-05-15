@@ -33,6 +33,7 @@ create index if not exists idx_qmatches_scheduled on public.qualifier_matches(sc
 alter table public.qualifier_matches enable row level security;
 
 -- Lectura pública (solo informativo, no sensible)
+drop policy if exists "qmatches_select" on public.qualifier_matches;
 create policy "qmatches_select" on public.qualifier_matches
   for select using (true);
 
