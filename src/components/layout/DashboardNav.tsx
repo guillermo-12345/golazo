@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Trophy, GitBranch, User, LogOut, Grid3X3, CalendarDays, BarChart3, Settings, Search, BookOpen, TrendingUp, History, Globe } from "lucide-react"
+import { LayoutDashboard, Trophy, GitBranch, User, LogOut, Grid3X3, CalendarDays, BarChart3, Settings, Search, BookOpen, TrendingUp, History, Globe, Shield } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import type { Profile } from "@/types/database"
@@ -37,10 +37,19 @@ const MOBILE_NAV_ITEMS = [
   { href: "/perfil", icon: User, label: "Perfil" },
 ]
 
-export default function DashboardNav({ profile }: { profile: Profile }) {
+export default function DashboardNav({
+  profile,
+  isAdmin = false,
+}: {
+  profile: Profile
+  isAdmin?: boolean
+}) {
   const pathname = usePathname()
   const router = useRouter()
   const [moreOpen, setMoreOpen] = useState(false)
+  const navItems = isAdmin
+    ? [...NAV_ITEMS, { href: "/admin", icon: Shield, label: "Admin" }]
+    : NAV_ITEMS
 
   async function handleLogout() {
     const supabase = createClient()
@@ -72,7 +81,7 @@ export default function DashboardNav({ profile }: { profile: Profile }) {
         </div>
 
         <nav className="flex-1 space-y-1">
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const active = pathname === item.href || pathname.startsWith(item.href + "/")
             return (
               <Link

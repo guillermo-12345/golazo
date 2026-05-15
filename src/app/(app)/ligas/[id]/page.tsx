@@ -9,6 +9,8 @@ import ActivityFeed from "@/components/leagues/ActivityFeed"
 import LeaderboardTable from "@/components/leagues/LeaderboardTable"
 import ShareButton from "@/components/ShareButton"
 import LeaveLeagueButton from "@/components/leagues/LeaveLeagueButton"
+import LeagueChat from "@/components/leagues/LeagueChat"
+import { MessageCircle } from "lucide-react"
 
 type League = {
   id: string
@@ -176,6 +178,17 @@ export default async function LigaDetailPage({ params }: { params: Promise<{ id:
           currentUserId={user!.id}
         />
       </section>
+
+      {/* Chat de liga — solo para miembros */}
+      {isMember && (
+        <section className="mt-8">
+          <div className="flex items-center gap-2 mb-4">
+            <MessageCircle size={18} className="text-green-400" />
+            <h2 className="text-lg font-bold text-white">Chat de la liga</h2>
+          </div>
+          <LeagueChat leagueId={league.id} currentUserId={user!.id} />
+        </section>
+      )}
 
       {/* Activity feed */}
       <section className="mt-8">
