@@ -70,6 +70,9 @@ export default function ConfigurarLigaPage({
     corners: false,
     firstTeamToScore: true,
     halftimeResult: true,
+    possession: false,
+    totalShots: false,
+    totalFouls: false,
   })
 
   // Password
@@ -133,7 +136,7 @@ export default function ConfigurarLigaPage({
         setIconStyle(l.config.icon.style)
         setIconSeed(l.config.icon.seed)
       }
-      const adv = l.config?.advancedOptions
+      const adv = l.config?.advancedOptions as Record<string, boolean> | undefined
       if (adv) {
         setAdvancedEnabled(adv.enabled ?? false)
         setAdvancedOpts({
@@ -144,6 +147,9 @@ export default function ConfigurarLigaPage({
           corners: adv.corners ?? false,
           firstTeamToScore: adv.firstTeamToScore ?? false,
           halftimeResult: adv.halftimeResult ?? false,
+          possession: adv.possession ?? false,
+          totalShots: adv.totalShots ?? false,
+          totalFouls: adv.totalFouls ?? false,
         })
       }
       setLoading(false)
@@ -459,9 +465,12 @@ export default function ConfigurarLigaPage({
                 { key: "firstTeamToScore", label: "Primer equipo en marcar", mult: "x3" },
                 { key: "halftimeResult", label: "Resultado al descanso", mult: "x3" },
                 { key: "goalMinute", label: "Minuto del primer gol", mult: "x4" },
-                { key: "yellowCards", label: "Tarjetas amarillas", mult: "x2" },
+                { key: "yellowCards", label: "Total tarjetas amarillas", mult: "x2" },
                 { key: "redCards", label: "Tarjeta roja en el partido", mult: "x3" },
-                { key: "corners", label: "Cantidad de córners", mult: "x2" },
+                { key: "corners", label: "Total córners", mult: "x2" },
+                { key: "possession", label: "Equipo con más posesión", mult: "x2" },
+                { key: "totalShots", label: "Total de tiros", mult: "x2" },
+                { key: "totalFouls", label: "Total de faltas", mult: "x2" },
               ].map((opt) => (
                 <label
                   key={opt.key}

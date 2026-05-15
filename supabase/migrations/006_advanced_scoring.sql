@@ -139,6 +139,56 @@ begin
     end;
   end if;
 
+  -- 8. Equipo con más posesión (x2)
+  v_pick := p_picks->>'morePossession';
+  if v_pick is not null and v_pick in ('home', 'away') then
+    declare
+      v_home_pos int := coalesce((p_extra->'possession'->>'home')::int, 0);
+      v_away_pos int := coalesce((p_extra->'possession'->>'away')::int, 0);
+      v_actual_winner text;
+    begin
+      if v_home_pos > v_away_pos then v_actual_winner := 'home';
+      elsif v_away_pos > v_home_pos then v_actual_winner := 'away';
+      else v_actual_winner := null; -- empate, no se otorga
+      end if;
+      if v_actual_winner = v_pick then
+        v_points := v_points + 2;
+      end if;
+    end;
+  end if;
+
+  -- 9. Total de tiros — rango (x2)
+  v_pick := p_picks->>'totalShots';
+  if v_pick is not null and v_pick != '' then
+    declare
+      v_total_shots int := coalesce((p_extra->'totalShots'->>'home')::int, 0) +
+                          coalesce((p_extra->'totalShots'->>'away')::int, 0);
+      v_from int := split_part(v_pick, '-', 1)::int;
+      v_to int := split_part(v_pick, '-', 2)::int;
+    begin
+      if v_total_shots >= v_from and v_total_shots <= v_to then
+        v_points := v_points + 2;
+      end if;
+    exception when others then null;
+    end;
+  end if;
+
+  -- 10. Total de faltas — rango (x2)
+  v_pick := p_picks->>'totalFouls';
+  if v_pick is not null and v_pick != '' then
+    declare
+      v_total_fouls int := coalesce((p_extra->'fouls'->>'home')::int, 0) +
+                          coalesce((p_extra->'fouls'->>'away')::int, 0);
+      v_from int := split_part(v_pick, '-', 1)::int;
+      v_to int := split_part(v_pick, '-', 2)::int;
+    begin
+      if v_total_fouls >= v_from and v_total_fouls <= v_to then
+        v_points := v_points + 2;
+      end if;
+    exception when others then null;
+    end;
+  end if;
+
   return v_points;
 end;
 $$;

@@ -275,6 +275,9 @@ export type LeagueConfig = {
     corners: boolean
     firstTeamToScore: boolean
     halftimeResult: boolean
+    possession: boolean
+    totalShots: boolean
+    totalFouls: boolean
   }
   multipliers: {
     exactScore: number
@@ -284,6 +287,19 @@ export type LeagueConfig = {
   }
   allowWildcards: boolean
   allowBracketChallenge: boolean
+}
+
+export type AdvancedPicks = {
+  firstScorer?: string
+  firstTeamToScore?: "home" | "away"
+  goalMinute?: string  // "0-15", "16-30", ...
+  halftimeResult?: string  // "1-0", "0-0", ...
+  totalYellowCards?: string  // "4-6", "7-9", ...
+  anyRedCard?: "yes" | "no"
+  totalCorners?: string  // "0-7", "8-12", ...
+  morePossession?: "home" | "away"
+  totalShots?: string  // "10-19", "20-29", ...
+  totalFouls?: string  // "10-19", "20-29", ...
 }
 
 export type WildcardType = "todo_o_nada" | "escudo" | "ladron"

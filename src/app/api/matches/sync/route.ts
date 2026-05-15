@@ -58,21 +58,39 @@ async function buildRows(fixtures: APIFixture[], fetchDetails = false) {
           if (homeStats || awayStats) {
             const getStat = (s: typeof homeStats, type: string) =>
               s?.statistics.find((st) => st.type === type)?.value
+            const toInt = (v: string | number | null | undefined): number => {
+              if (typeof v === "number") return v
+              if (typeof v === "string") {
+                const n = parseInt(v.replace(/[^\d-]/g, ""))
+                return isNaN(n) ? 0 : n
+              }
+              return 0
+            }
+
             extraData.corners = {
-              home: getStat(homeStats, "Corner Kicks") ?? 0,
-              away: getStat(awayStats, "Corner Kicks") ?? 0,
+              home: toInt(getStat(homeStats, "Corner Kicks")),
+              away: toInt(getStat(awayStats, "Corner Kicks")),
             }
             extraData.yellowCards = {
-              home: getStat(homeStats, "Yellow Cards") ?? 0,
-              away: getStat(awayStats, "Yellow Cards") ?? 0,
+              home: toInt(getStat(homeStats, "Yellow Cards")),
+              away: toInt(getStat(awayStats, "Yellow Cards")),
             }
             extraData.redCards = {
-              home: getStat(homeStats, "Red Cards") ?? 0,
-              away: getStat(awayStats, "Red Cards") ?? 0,
+              home: toInt(getStat(homeStats, "Red Cards")),
+              away: toInt(getStat(awayStats, "Red Cards")),
             }
+            // Posesión guardada como entero (%, sin símbolo)
             extraData.possession = {
-              home: getStat(homeStats, "Ball Possession") ?? null,
-              away: getStat(awayStats, "Ball Possession") ?? null,
+              home: toInt(getStat(homeStats, "Ball Possession")),
+              away: toInt(getStat(awayStats, "Ball Possession")),
+            }
+            extraData.totalShots = {
+              home: toInt(getStat(homeStats, "Total Shots")),
+              away: toInt(getStat(awayStats, "Total Shots")),
+            }
+            extraData.fouls = {
+              home: toInt(getStat(homeStats, "Fouls")),
+              away: toInt(getStat(awayStats, "Fouls")),
             }
           }
         } catch (err) {

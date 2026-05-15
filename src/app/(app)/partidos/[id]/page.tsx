@@ -50,6 +50,9 @@ export default async function PartidoDetailPage({
           corners: boolean
           firstTeamToScore: boolean
           halftimeResult: boolean
+          possession?: boolean
+          totalShots?: boolean
+          totalFouls?: boolean
         }
       }
     } | null

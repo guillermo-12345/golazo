@@ -3,8 +3,9 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { Loader2, Lock, Check, Sparkles, Minus, Plus } from "lucide-react"
+import { Loader2, Lock, Check, Sparkles, Minus, Plus, ChevronDown } from "lucide-react"
 import type { Match } from "@/types/database"
+import { cn } from "@/lib/utils"
 
 type LeagueForPrediction = {
   id: string
@@ -20,18 +21,40 @@ type LeagueForPrediction = {
       corners: boolean
       firstTeamToScore: boolean
       halftimeResult: boolean
+      possession?: boolean
+      totalShots?: boolean
+      totalFouls?: boolean
     }
   }
+}
+
+type AdvancedPicks = {
+  firstScorer?: string
+  firstTeamToScore?: "home" | "away"
+  goalMinute?: string
+  halftimeResult?: string
+  totalYellowCards?: string
+  anyRedCard?: "yes" | "no"
+  totalCorners?: string
+  morePossession?: "home" | "away"
+  totalShots?: string
+  totalFouls?: string
 }
 
 type ExistingPred = {
   league_id: string
   home_score_pred: number
   away_score_pred: number
-  advanced_picks: Record<string, unknown>
+  advanced_picks: AdvancedPicks
   points_wagered: number
   wildcard_used: string | null
 }
+
+const MINUTE_RANGES = ["0-15", "16-30", "31-45", "46-60", "61-75", "76-90"]
+const YELLOW_RANGES = ["0-3", "4-6", "7-9", "10-12", "13-20"]
+const CORNER_RANGES = ["0-5", "6-10", "11-15", "16-20"]
+const SHOT_RANGES = ["0-10", "11-20", "21-30", "31-50"]
+const FOUL_RANGES = ["0-15", "16-25", "26-35", "36-50"]
 
 export default function PredictionForm({
   match,
@@ -48,13 +71,21 @@ export default function PredictionForm({
   const [selectedLeagueId, setSelectedLeagueId] = useState(leagues[0].id)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [advancedExpanded, setAdvancedExpanded] = useState(false)
 
   const existing = existingPreds.find((p) => p.league_id === selectedLeagueId)
   const [homeScore, setHomeScore] = useState(existing?.home_score_pred ?? 0)
   const [awayScore, setAwayScore] = useState(existing?.away_score_pred ?? 0)
   const [wildcard, setWildcard] = useState<string | null>(existing?.wildcard_used ?? null)
+  const [picks, setPicks] = useState<AdvancedPicks>(existing?.advanced_picks ?? {})
 
   const selectedLeague = leagues.find((l) => l.id === selectedLeagueId)!
+  const adv = selectedLeague.config.advancedOptions
+  const hasAnyAdvanced =
+    adv?.enabled &&
+    (adv.firstScorer || adv.firstTeamToScore || adv.goalMinute || adv.halftimeResult ||
+      adv.yellowCards || adv.redCards || adv.corners || adv.possession ||
+      adv.totalShots || adv.totalFouls)
 
   async function handleSave() {
     setSaving(true)
@@ -70,7 +101,7 @@ export default function PredictionForm({
         home_score_pred: homeScore,
         away_score_pred: awayScore,
         wildcard_used: wildcard,
-        advanced_picks: {},
+        advanced_picks: picks,
         points_wagered: 0,
       },
       { onConflict: "user_id,match_id,league_id" }
@@ -90,6 +121,16 @@ export default function PredictionForm({
     setHomeScore(ex?.home_score_pred ?? 0)
     setAwayScore(ex?.away_score_pred ?? 0)
     setWildcard(ex?.wildcard_used ?? null)
+    setPicks(ex?.advanced_picks ?? {})
+  }
+
+  function updatePick<K extends keyof AdvancedPicks>(key: K, value: AdvancedPicks[K] | undefined) {
+    setPicks((p) => {
+      const next = { ...p }
+      if (value === undefined || value === "") delete next[key]
+      else next[key] = value
+      return next
+    })
   }
 
   if (isLocked) {
@@ -117,16 +158,14 @@ export default function PredictionForm({
                 <button
                   key={l.id}
                   onClick={() => handleLeagueChange(l.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors border ${
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors border",
                     selectedLeagueId === l.id
                       ? "bg-green-500/20 border-green-500/50 text-white"
                       : "bg-white/5 border-white/10 text-gray-400 hover:border-white/20"
-                  }`}
+                  )}
                 >
-                  <span
-                    className="w-2 h-2 rounded-full"
-                    style={{ backgroundColor: l.banner_color }}
-                  />
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: l.banner_color }} />
                   {l.name}
                   {hasPred && <Check size={12} className="text-green-400" />}
                 </button>
@@ -148,15 +187,18 @@ export default function PredictionForm({
           <ScoreInput value={awayScore} onChange={setAwayScore} label={match.away_team_code} />
         </div>
 
-        {/* Puntaje estimado */}
-        <div className="mt-6 pt-6 border-t border-white/10">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-400">Puntos si acertás exacto</span>
-            <span className="text-green-400 font-bold">+5 pts</span>
+        <div className="mt-6 pt-6 border-t border-white/10 grid grid-cols-2 gap-2 text-xs">
+          <div className="flex items-center justify-between text-gray-400">
+            <span>Exacto</span><span className="text-green-400 font-bold">+5</span>
           </div>
-          <div className="flex items-center justify-between text-sm mt-2">
-            <span className="text-gray-400">Si solo acertás el ganador</span>
-            <span className="text-green-400 font-bold">+1 pt</span>
+          <div className="flex items-center justify-between text-gray-400">
+            <span>Empate</span><span className="text-green-400 font-bold">+4</span>
+          </div>
+          <div className="flex items-center justify-between text-gray-400">
+            <span>Ganador + diferencia</span><span className="text-green-400 font-bold">+3</span>
+          </div>
+          <div className="flex items-center justify-between text-gray-400">
+            <span>Solo ganador</span><span className="text-green-400 font-bold">+1</span>
           </div>
         </div>
       </div>
@@ -171,22 +213,19 @@ export default function PredictionForm({
 
         <div className="grid grid-cols-3 gap-2">
           <WildcardButton
-            label="Todo o Nada"
-            description="x2 si acertás · -2 si fallás"
+            label="Todo o Nada" description="x2 si acertás · -2 si fallás"
             active={wildcard === "todo_o_nada"}
             onClick={() => setWildcard(wildcard === "todo_o_nada" ? null : "todo_o_nada")}
             color="#ef4444"
           />
           <WildcardButton
-            label="Escudo"
-            description="Protege puntos avanzados"
+            label="Escudo" description="Protege puntos avanzados"
             active={wildcard === "escudo"}
             onClick={() => setWildcard(wildcard === "escudo" ? null : "escudo")}
             color="#3b82f6"
           />
           <WildcardButton
-            label="Ladrón"
-            description="Robá 2 pts al líder"
+            label="Ladrón" description="Robá 2 pts al líder"
             active={wildcard === "ladron"}
             onClick={() => setWildcard(wildcard === "ladron" ? null : "ladron")}
             color="#a855f7"
@@ -195,15 +234,150 @@ export default function PredictionForm({
       </div>
 
       {/* Avanzadas */}
-      {selectedLeague.config.advancedOptions?.enabled && (
-        <div className="bg-gradient-to-br from-yellow-500/5 to-orange-500/5 border border-yellow-500/20 rounded-2xl p-5">
-          <div className="flex items-center gap-2 mb-2">
-            <Sparkles size={14} className="text-yellow-400" />
-            <p className="text-sm font-bold text-yellow-400">Opciones avanzadas</p>
-          </div>
-          <p className="text-xs text-gray-500 mb-3">
-            Próximamente — predicciones extra que multiplican tus puntos
-          </p>
+      {hasAnyAdvanced && (
+        <div className="bg-gradient-to-br from-yellow-500/5 to-orange-500/5 border border-yellow-500/20 rounded-2xl overflow-hidden">
+          <button
+            onClick={() => setAdvancedExpanded((v) => !v)}
+            className="w-full flex items-center gap-2 p-5 hover:bg-white/[0.02] transition-colors text-left"
+          >
+            <Sparkles size={16} className="text-yellow-400" />
+            <div className="flex-1">
+              <p className="text-yellow-400 font-bold text-sm">Predicciones avanzadas</p>
+              <p className="text-gray-500 text-xs mt-0.5">
+                Bonus extra si acertás · solo cuentan los campos que llenes
+              </p>
+            </div>
+            <ChevronDown
+              size={18}
+              className={cn("text-gray-500 transition-transform", advancedExpanded && "rotate-180")}
+            />
+          </button>
+
+          {advancedExpanded && (
+            <div className="px-5 pb-5 space-y-4 border-t border-white/5">
+              {/* Goleador */}
+              {adv.firstScorer && (
+                <AdvancedRow label="Goleador del partido" pts={5}>
+                  <input
+                    value={picks.firstScorer ?? ""}
+                    onChange={(e) => updatePick("firstScorer", e.target.value)}
+                    placeholder="Ej: Lionel Messi"
+                    maxLength={50}
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-yellow-500/50"
+                  />
+                </AdvancedRow>
+              )}
+
+              {/* Primer equipo en marcar */}
+              {adv.firstTeamToScore && (
+                <AdvancedRow label="Primer equipo en marcar" pts={3}>
+                  <PickRow
+                    options={[
+                      { value: "home", label: match.home_team_code },
+                      { value: "away", label: match.away_team_code },
+                    ]}
+                    selected={picks.firstTeamToScore}
+                    onChange={(v) => updatePick("firstTeamToScore", v as "home" | "away")}
+                  />
+                </AdvancedRow>
+              )}
+
+              {/* Minuto del primer gol */}
+              {adv.goalMinute && (
+                <AdvancedRow label="Minuto del primer gol" pts={4}>
+                  <PickRow
+                    options={MINUTE_RANGES.map((r) => ({ value: r, label: r + "'" }))}
+                    selected={picks.goalMinute}
+                    onChange={(v) => updatePick("goalMinute", v)}
+                  />
+                </AdvancedRow>
+              )}
+
+              {/* Resultado al descanso */}
+              {adv.halftimeResult && (
+                <AdvancedRow label="Resultado al descanso (1er tiempo)" pts={3}>
+                  <HalftimeInput
+                    value={picks.halftimeResult ?? ""}
+                    onChange={(v) => updatePick("halftimeResult", v)}
+                    homeCode={match.home_team_code}
+                    awayCode={match.away_team_code}
+                  />
+                </AdvancedRow>
+              )}
+
+              {/* Total amarillas */}
+              {adv.yellowCards && (
+                <AdvancedRow label="Total tarjetas amarillas" pts={2}>
+                  <PickRow
+                    options={YELLOW_RANGES.map((r) => ({ value: r, label: r }))}
+                    selected={picks.totalYellowCards}
+                    onChange={(v) => updatePick("totalYellowCards", v)}
+                  />
+                </AdvancedRow>
+              )}
+
+              {/* Tarjeta roja */}
+              {adv.redCards && (
+                <AdvancedRow label="¿Habrá tarjeta roja?" pts={3}>
+                  <PickRow
+                    options={[
+                      { value: "yes", label: "Sí" },
+                      { value: "no", label: "No" },
+                    ]}
+                    selected={picks.anyRedCard}
+                    onChange={(v) => updatePick("anyRedCard", v as "yes" | "no")}
+                  />
+                </AdvancedRow>
+              )}
+
+              {/* Total córners */}
+              {adv.corners && (
+                <AdvancedRow label="Total córners" pts={2}>
+                  <PickRow
+                    options={CORNER_RANGES.map((r) => ({ value: r, label: r }))}
+                    selected={picks.totalCorners}
+                    onChange={(v) => updatePick("totalCorners", v)}
+                  />
+                </AdvancedRow>
+              )}
+
+              {/* Posesión */}
+              {adv.possession && (
+                <AdvancedRow label="Equipo con más posesión" pts={2}>
+                  <PickRow
+                    options={[
+                      { value: "home", label: match.home_team_code },
+                      { value: "away", label: match.away_team_code },
+                    ]}
+                    selected={picks.morePossession}
+                    onChange={(v) => updatePick("morePossession", v as "home" | "away")}
+                  />
+                </AdvancedRow>
+              )}
+
+              {/* Total tiros */}
+              {adv.totalShots && (
+                <AdvancedRow label="Total de tiros" pts={2}>
+                  <PickRow
+                    options={SHOT_RANGES.map((r) => ({ value: r, label: r }))}
+                    selected={picks.totalShots}
+                    onChange={(v) => updatePick("totalShots", v)}
+                  />
+                </AdvancedRow>
+              )}
+
+              {/* Total faltas */}
+              {adv.totalFouls && (
+                <AdvancedRow label="Total de faltas" pts={2}>
+                  <PickRow
+                    options={FOUL_RANGES.map((r) => ({ value: r, label: r }))}
+                    selected={picks.totalFouls}
+                    onChange={(v) => updatePick("totalFouls", v)}
+                  />
+                </AdvancedRow>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -221,15 +395,7 @@ export default function PredictionForm({
   )
 }
 
-function ScoreInput({
-  value,
-  onChange,
-  label,
-}: {
-  value: number
-  onChange: (v: number) => void
-  label: string
-}) {
+function ScoreInput({ value, onChange, label }: { value: number; onChange: (v: number) => void; label: string }) {
   return (
     <div className="text-center">
       <p className="text-gray-500 text-xs mb-2 font-bold">{label}</p>
@@ -254,19 +420,7 @@ function ScoreInput({
   )
 }
 
-function WildcardButton({
-  label,
-  description,
-  active,
-  onClick,
-  color,
-}: {
-  label: string
-  description: string
-  active: boolean
-  onClick: () => void
-  color: string
-}) {
+function WildcardButton({ label, description, active, onClick, color }: { label: string; description: string; active: boolean; onClick: () => void; color: string }) {
   return (
     <button
       onClick={onClick}
@@ -279,5 +433,75 @@ function WildcardButton({
       <p className="text-white text-xs font-bold mb-0.5">{label}</p>
       <p className="text-gray-500 text-[10px] leading-tight">{description}</p>
     </button>
+  )
+}
+
+function AdvancedRow({ label, pts, children }: { label: string; pts: number; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-white text-sm font-medium">{label}</p>
+        <span className="text-yellow-400 text-xs font-bold">+{pts} pts</span>
+      </div>
+      {children}
+    </div>
+  )
+}
+
+function PickRow({ options, selected, onChange }: { options: { value: string; label: string }[]; selected: string | undefined; onChange: (v: string | undefined) => void }) {
+  return (
+    <div className="flex gap-1.5 flex-wrap">
+      {options.map((opt) => {
+        const active = selected === opt.value
+        return (
+          <button
+            key={opt.value}
+            onClick={() => onChange(active ? undefined : opt.value)}
+            className={cn(
+              "px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors",
+              active
+                ? "bg-yellow-500/15 border-yellow-500/40 text-white"
+                : "bg-white/5 border-white/10 text-gray-400 hover:border-white/20"
+            )}
+          >
+            {opt.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function HalftimeInput({ value, onChange, homeCode, awayCode }: { value: string; onChange: (v: string) => void; homeCode: string; awayCode: string }) {
+  const [h, a] = value ? value.split("-").map((n) => parseInt(n) || 0) : [0, 0]
+  const set = (newH: number, newA: number) => onChange(`${Math.max(0, newH)}-${Math.max(0, newA)}`)
+  return (
+    <div className="flex items-center justify-center gap-3">
+      <div className="flex items-center gap-1">
+        <span className="text-gray-500 text-xs">{homeCode}</span>
+        <button onClick={() => set(h - 1, a)} className="w-7 h-7 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+          <Minus size={12} className="text-gray-400" />
+        </button>
+        <div className="w-9 h-9 bg-yellow-500/10 border border-yellow-500/30 rounded-lg flex items-center justify-center">
+          <span className="text-lg font-black text-white">{h}</span>
+        </div>
+        <button onClick={() => set(h + 1, a)} className="w-7 h-7 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+          <Plus size={12} className="text-gray-400" />
+        </button>
+      </div>
+      <span className="text-gray-500">·</span>
+      <div className="flex items-center gap-1">
+        <button onClick={() => set(h, a - 1)} className="w-7 h-7 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+          <Minus size={12} className="text-gray-400" />
+        </button>
+        <div className="w-9 h-9 bg-yellow-500/10 border border-yellow-500/30 rounded-lg flex items-center justify-center">
+          <span className="text-lg font-black text-white">{a}</span>
+        </div>
+        <button onClick={() => set(h, a + 1)} className="w-7 h-7 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+          <Plus size={12} className="text-gray-400" />
+        </button>
+        <span className="text-gray-500 text-xs">{awayCode}</span>
+      </div>
+    </div>
   )
 }
