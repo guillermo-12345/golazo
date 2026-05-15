@@ -9,6 +9,9 @@ import type { Profile } from "@/types/database"
 import { cn } from "@/lib/utils"
 import Avatar from "@/components/Avatar"
 import NotificationBell from "@/components/notifications/NotificationBell"
+import MobileMoreSheet from "@/components/layout/MobileMoreSheet"
+import { useState } from "react"
+import { MoreHorizontal } from "lucide-react"
 
 const NAV_ITEMS = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Inicio" },
@@ -24,7 +27,7 @@ const NAV_ITEMS = [
   { href: "/perfil", icon: User, label: "Perfil" },
 ]
 
-// Mobile bottom nav: solo los 5 mas importantes
+// Mobile bottom nav: solo los 4 mas importantes + "Mas" sheet
 const MOBILE_NAV_ITEMS = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Inicio" },
   { href: "/calendario", icon: CalendarDays, label: "Calendario" },
@@ -36,6 +39,7 @@ const MOBILE_NAV_ITEMS = [
 export default function DashboardNav({ profile }: { profile: Profile }) {
   const pathname = usePathname()
   const router = useRouter()
+  const [moreOpen, setMoreOpen] = useState(false)
 
   async function handleLogout() {
     const supabase = createClient()
@@ -117,15 +121,15 @@ export default function DashboardNav({ profile }: { profile: Profile }) {
       </aside>
 
       {/* Bottom nav — mobile */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-black/80 backdrop-blur-xl border-t border-white/10 flex items-center justify-around px-2 py-2">
-        {MOBILE_NAV_ITEMS.map((item) => {
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-black/80 backdrop-blur-xl border-t border-white/10 flex items-center justify-around px-1 py-2">
+        {MOBILE_NAV_ITEMS.slice(0, 4).map((item) => {
           const active = pathname === item.href || pathname.startsWith(item.href + "/")
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl transition-colors",
+                "flex flex-col items-center gap-1 px-2 py-1.5 rounded-xl transition-colors flex-1",
                 active ? "text-green-400" : "text-gray-600"
               )}
             >
@@ -134,7 +138,22 @@ export default function DashboardNav({ profile }: { profile: Profile }) {
             </Link>
           )
         })}
+
+        {/* Boton "Mas" - abre el sheet con todas las paginas secundarias */}
+        <button
+          onClick={() => setMoreOpen(true)}
+          className={cn(
+            "flex flex-col items-center gap-1 px-2 py-1.5 rounded-xl transition-colors flex-1",
+            moreOpen ? "text-green-400" : "text-gray-600"
+          )}
+        >
+          <MoreHorizontal size={20} />
+          <span className="text-[10px] font-medium">Más</span>
+        </button>
       </nav>
+
+      {/* Sheet de "Más" en mobile */}
+      <MobileMoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} />
     </>
   )
 }

@@ -1,5 +1,12 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js"
-import { getFixtures, getLiveFixtures, mapFixtureStatus, type APIFixture } from "@/lib/api-football/client"
+import {
+  getFixtures,
+  getLiveFixtures,
+  getFixtureEvents,
+  getFixtureStatistics,
+  mapFixtureStatus,
+  type APIFixture,
+} from "@/lib/api-football/client"
 
 /**
  * Endpoint de sincronización con API-Football.
@@ -15,27 +22,83 @@ import { getFixtures, getLiveFixtures, mapFixtureStatus, type APIFixture } from 
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
 
-function buildRows(fixtures: APIFixture[]) {
-  return fixtures.map((f) => ({
-    api_fixture_id: f.fixture.id,
-    home_team: f.teams.home.name,
-    away_team: f.teams.away.name,
-    home_team_logo: f.teams.home.logo,
-    away_team_logo: f.teams.away.logo,
-    home_team_code: f.teams.home.name.slice(0, 3).toUpperCase(),
-    away_team_code: f.teams.away.name.slice(0, 3).toUpperCase(),
-    scheduled_at: f.fixture.date,
-    status: mapFixtureStatus(f.fixture.status.short),
-    home_score: f.goals.home,
-    away_score: f.goals.away,
-    stage: f.league.round,
-    venue: f.fixture.venue.name,
-    minute: f.fixture.status.elapsed,
-    extra_data: {
-      halftime: f.score.halftime,
-      fulltime: f.score.fulltime,
-    },
-  }))
+async function buildRows(fixtures: APIFixture[], fetchDetails = false) {
+  return Promise.all(
+    fixtures.map(async (f) => {
+      const status = mapFixtureStatus(f.fixture.status.short)
+      const extraData: Record<string, unknown> = {
+        halftime: f.score.halftime,
+        fulltime: f.score.fulltime,
+      }
+
+      // Para partidos terminados, traemos events + statistics
+      if (fetchDetails && status === "finished") {
+        try {
+          const [events, statistics] = await Promise.all([
+            getFixtureEvents(f.fixture.id),
+            getFixtureStatistics(f.fixture.id),
+          ])
+          extraData.events = events
+          extraData.statistics = statistics
+
+          // Calcular datos derivados utiles para scoring de avanzadas
+          const goals = events.filter((e) => e.type === "Goal" && !e.detail.includes("cancelled"))
+          const firstGoal = goals[0]
+          if (firstGoal) {
+            extraData.firstScorer = firstGoal.player?.name ?? null
+            extraData.firstScorerTeam = firstGoal.team.name
+            extraData.firstGoalMinute = firstGoal.time.elapsed
+            extraData.firstTeamToScore =
+              firstGoal.team.name === f.teams.home.name ? "home" : "away"
+          }
+
+          // Stats agregadas por equipo
+          const homeStats = statistics.find((s) => s.team.name === f.teams.home.name)
+          const awayStats = statistics.find((s) => s.team.name === f.teams.away.name)
+          if (homeStats || awayStats) {
+            const getStat = (s: typeof homeStats, type: string) =>
+              s?.statistics.find((st) => st.type === type)?.value
+            extraData.corners = {
+              home: getStat(homeStats, "Corner Kicks") ?? 0,
+              away: getStat(awayStats, "Corner Kicks") ?? 0,
+            }
+            extraData.yellowCards = {
+              home: getStat(homeStats, "Yellow Cards") ?? 0,
+              away: getStat(awayStats, "Yellow Cards") ?? 0,
+            }
+            extraData.redCards = {
+              home: getStat(homeStats, "Red Cards") ?? 0,
+              away: getStat(awayStats, "Red Cards") ?? 0,
+            }
+            extraData.possession = {
+              home: getStat(homeStats, "Ball Possession") ?? null,
+              away: getStat(awayStats, "Ball Possession") ?? null,
+            }
+          }
+        } catch (err) {
+          console.error("Error fetching details for fixture", f.fixture.id, err)
+        }
+      }
+
+      return {
+        api_fixture_id: f.fixture.id,
+        home_team: f.teams.home.name,
+        away_team: f.teams.away.name,
+        home_team_logo: f.teams.home.logo,
+        away_team_logo: f.teams.away.logo,
+        home_team_code: f.teams.home.name.slice(0, 3).toUpperCase(),
+        away_team_code: f.teams.away.name.slice(0, 3).toUpperCase(),
+        scheduled_at: f.fixture.date,
+        status,
+        home_score: f.goals.home,
+        away_score: f.goals.away,
+        stage: f.league.round,
+        venue: f.fixture.venue.name,
+        minute: f.fixture.status.elapsed,
+        extra_data: extraData,
+      }
+    })
+  )
 }
 
 async function authorize(request: Request): Promise<boolean> {
@@ -71,7 +134,8 @@ export async function POST(request: Request) {
 
   try {
     const fixtures = liveOnly ? await getLiveFixtures() : await getFixtures(seasonOverride)
-    const rows = buildRows(fixtures)
+    // fetchDetails=true para sync completo: trae events + stats de partidos terminados
+    const rows = await buildRows(fixtures, !liveOnly)
     const finishedCount = rows.filter((r) => r.status === "finished").length
 
     // En modo dry-run NO escribimos a la DB, solo devolvemos el resumen

@@ -48,6 +48,29 @@ export async function getFixtureById(fixtureId: number): Promise<APIFixture[]> {
   return apiFetch(`/fixtures?id=${fixtureId}`)
 }
 
+export type APIEvent = {
+  time: { elapsed: number; extra: number | null }
+  team: { id: number; name: string; logo: string }
+  player: { id: number; name: string } | null
+  assist: { id: number | null; name: string | null }
+  type: string
+  detail: string
+  comments: string | null
+}
+
+export type APIStatistic = {
+  team: { id: number; name: string; logo: string }
+  statistics: Array<{ type: string; value: string | number | null }>
+}
+
+export async function getFixtureEvents(fixtureId: number): Promise<APIEvent[]> {
+  return apiFetch(`/fixtures/events?fixture=${fixtureId}`)
+}
+
+export async function getFixtureStatistics(fixtureId: number): Promise<APIStatistic[]> {
+  return apiFetch(`/fixtures/statistics?fixture=${fixtureId}`)
+}
+
 export async function getLiveFixtures(): Promise<APIFixture[]> {
   return apiFetch(`/fixtures?league=${LEAGUE_ID}&season=${DEFAULT_SEASON}&live=all`)
 }

@@ -11,6 +11,8 @@ import LocalDateTime from "@/components/LocalDateTime"
 import ShareButton from "@/components/ShareButton"
 import LiveScore from "@/components/matches/LiveScore"
 import LiveMatchScoreboard from "@/components/matches/LiveMatchScoreboard"
+import MatchEvents from "@/components/matches/MatchEvents"
+import MatchStatistics from "@/components/matches/MatchStatistics"
 
 export default async function PartidoDetailPage({
   params,
@@ -146,6 +148,47 @@ export default async function PartidoDetailPage({
           />
         </section>
       )}
+
+      {/* Stats del partido y eventos — solo cuando ya termino */}
+      {match.status === "finished" && match.extra_data && (() => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const extra = match.extra_data as any
+        const hasEvents = Array.isArray(extra.events) && extra.events.length > 0
+        const hasStats = Array.isArray(extra.statistics) && extra.statistics.length > 0
+        if (!hasEvents && !hasStats) return null
+        return (
+          <div className="mt-8 space-y-6">
+            {hasStats && (
+              <section>
+                <div className="flex items-center gap-2 mb-4">
+                  <Users size={18} className="text-green-400" />
+                  <h2 className="text-lg font-bold text-white">Estadísticas del partido</h2>
+                </div>
+                <MatchStatistics
+                  statistics={extra.statistics}
+                  homeTeam={match.home_team}
+                  homeCode={match.home_team_code}
+                  awayCode={match.away_team_code}
+                />
+              </section>
+            )}
+            {hasEvents && (
+              <section>
+                <div className="flex items-center gap-2 mb-4">
+                  <Users size={18} className="text-yellow-400" />
+                  <h2 className="text-lg font-bold text-white">Eventos del partido</h2>
+                </div>
+                <MatchEvents
+                  events={extra.events}
+                  homeTeam={match.home_team}
+                  homeCode={match.home_team_code}
+                  awayCode={match.away_team_code}
+                />
+              </section>
+            )}
+          </div>
+        )
+      })()}
 
       {/* Feed social — solo cuando ya cerró el pronóstico */}
       {isLocked && validLeagues.length > 0 && (
