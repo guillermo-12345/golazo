@@ -64,7 +64,7 @@ export default function LiveScore({ initialMatch, onUpdate }: Props) {
         </span>
         <span className="text-red-300 text-xs font-bold uppercase tracking-wider">En vivo</span>
         {match.minute !== null && (
-          <span className="text-red-200 text-xs font-mono tabular-nums">{match.minute}'</span>
+          <span className="text-red-200 text-xs font-mono tabular-nums">{match.minute}&apos;</span>
         )}
       </div>
     </div>

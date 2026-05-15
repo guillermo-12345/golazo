@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic"
 import { createClient } from "@/lib/supabase/client"
 import { useState } from "react"
 import { LogIn, Loader2 } from "lucide-react"
+import Link from "next/link"
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false)
@@ -61,9 +62,9 @@ export default function LoginPage() {
         </div>
 
         <p className="text-center mt-6">
-          <a href="/" className="text-gray-600 hover:text-gray-400 text-sm transition-colors">
+          <Link href="/" className="text-gray-600 hover:text-gray-400 text-sm transition-colors">
             ← Volver al inicio
-          </a>
+          </Link>
         </p>
       </div>
     </main>
