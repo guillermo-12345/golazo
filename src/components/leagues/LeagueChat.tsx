@@ -149,7 +149,7 @@ export default function LeagueChat({ leagueId, currentUserId }: Props) {
   }
 
   return (
-    <div className="bg-white/5 border border-white/10 rounded-2xl flex flex-col h-[480px]">
+    <div className="bg-white/5 border border-white/10 rounded-2xl flex flex-col h-[480px] w-full max-w-full overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-white/10">
         <MessageCircle size={18} className="text-green-400" />
@@ -228,13 +228,13 @@ export default function LeagueChat({ leagueId, currentUserId }: Props) {
       {/* Input */}
       <form onSubmit={handleSend} className="border-t border-white/10 p-3">
         {error && <p className="text-red-400 text-xs mb-2 px-1">{error}</p>}
-        <div className="flex gap-2">
+        <div className="flex gap-2 min-w-0">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Escribí un mensaje..."
             maxLength={500}
-            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-green-500/50 transition-colors"
+            className="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-green-500/50 transition-colors"
           />
           <button
             type="submit"
