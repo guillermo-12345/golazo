@@ -129,11 +129,19 @@ export default function LeagueChat({ leagueId, currentUserId }: Props) {
     })
 
     if (insErr) {
-      setError(
-        insErr.message.includes("Rate limit")
-          ? "Esperá un momento antes de mandar más mensajes"
-          : "No se pudo enviar el mensaje"
-      )
+      let msg = "No se pudo enviar el mensaje"
+      if (insErr.message.includes("Rate limit")) {
+        msg = "Esperá un momento antes de mandar más mensajes"
+      } else if (
+        insErr.message.includes("league_messages") ||
+        insErr.code === "PGRST205" ||
+        insErr.code === "42P01"
+      ) {
+        msg = "El chat todavía no está activado en esta liga. El administrador debe completar la configuración."
+      } else if (insErr.code === "42501" || insErr.message.includes("policy")) {
+        msg = "No tenés permiso para escribir en este chat"
+      }
+      setError(msg)
       setSending(false)
       return
     }
@@ -149,7 +157,7 @@ export default function LeagueChat({ leagueId, currentUserId }: Props) {
   }
 
   return (
-    <div className="bg-white/5 border border-white/10 rounded-2xl flex flex-col h-[480px] w-full max-w-full overflow-hidden">
+    <div className="bg-white/5 border border-white/10 rounded-2xl flex flex-col h-[320px] md:h-[440px] w-full max-w-full overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-white/10">
         <MessageCircle size={18} className="text-green-400" />

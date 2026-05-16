@@ -131,7 +131,9 @@ export default function DashboardNav({
       </aside>
 
       {/* Bottom nav — mobile */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-black/80 backdrop-blur-xl border-t border-white/10 flex items-center justify-around px-1 py-2">
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0a0a0a] border-t-2 border-green-500/20 flex items-stretch justify-around px-1 pt-1.5 pb-[calc(0.5rem+env(safe-area-inset-bottom))] shadow-[0_-8px_24px_rgba(0,0,0,0.6)]"
+      >
         {MOBILE_NAV_ITEMS.slice(0, 4).map((item) => {
           const active = pathname === item.href || pathname.startsWith(item.href + "/")
           return (
@@ -139,12 +141,17 @@ export default function DashboardNav({
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center gap-1 px-2 py-1.5 rounded-xl transition-colors flex-1",
-                active ? "text-green-400" : "text-gray-600"
+                "flex flex-col items-center gap-1 px-1 py-1.5 rounded-xl transition-all flex-1 relative",
+                active ? "text-green-400" : "text-gray-400"
               )}
             >
-              <item.icon size={20} />
-              <span className="text-[10px] font-medium">{item.label}</span>
+              {active && (
+                <span className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-8 h-1 bg-green-500 rounded-full" />
+              )}
+              <item.icon size={22} strokeWidth={active ? 2.5 : 2} />
+              <span className={cn("text-[10px]", active ? "font-bold" : "font-medium")}>
+                {item.label}
+              </span>
             </Link>
           )
         })}
@@ -153,12 +160,15 @@ export default function DashboardNav({
         <button
           onClick={() => setMoreOpen(true)}
           className={cn(
-            "flex flex-col items-center gap-1 px-2 py-1.5 rounded-xl transition-colors flex-1",
-            moreOpen ? "text-green-400" : "text-gray-600"
+            "flex flex-col items-center gap-1 px-1 py-1.5 rounded-xl transition-all flex-1 relative",
+            moreOpen ? "text-green-400" : "text-gray-400"
           )}
         >
-          <MoreHorizontal size={20} />
-          <span className="text-[10px] font-medium">Más</span>
+          {moreOpen && (
+            <span className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-8 h-1 bg-green-500 rounded-full" />
+          )}
+          <MoreHorizontal size={22} strokeWidth={moreOpen ? 2.5 : 2} />
+          <span className={cn("text-[10px]", moreOpen ? "font-bold" : "font-medium")}>Más</span>
         </button>
       </nav>
 

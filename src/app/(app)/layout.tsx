@@ -30,7 +30,7 @@ export default async function AppLayout({
   return (
     <div className="min-h-screen flex flex-col">
       <DashboardNav profile={profile} isAdmin={isAdmin} />
-      <div className="flex-1 pt-14 md:pt-0 pb-20 md:pb-0 md:pl-64 flex flex-col">
+      <div className="flex-1 pt-14 md:pt-0 pb-24 md:pb-0 md:pl-64 flex flex-col">
         <div className="flex-1">{children}</div>
         <Footer />
       </div>

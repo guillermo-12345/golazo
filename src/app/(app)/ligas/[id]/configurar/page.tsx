@@ -62,6 +62,7 @@ export default function ConfigurarLigaPage({
   const [iconStyle, setIconStyle] = useState<LeagueIconStyle>("shapes")
   const [iconSeed, setIconSeed] = useState(randomLeagueSeed())
   const [advancedEnabled, setAdvancedEnabled] = useState(false)
+  const [allowWildcards, setAllowWildcards] = useState(true)
   const [advancedOpts, setAdvancedOpts] = useState({
     firstScorer: true,
     goalMinute: false,
@@ -152,6 +153,9 @@ export default function ConfigurarLigaPage({
           totalFouls: adv.totalFouls ?? false,
         })
       }
+      setAllowWildcards(
+        (l.config as { allowWildcards?: boolean } | null)?.allowWildcards !== false
+      )
       setLoading(false)
     }
     load()
@@ -170,7 +174,7 @@ export default function ConfigurarLigaPage({
     const config = {
       advancedOptions: { enabled: advancedEnabled, ...advancedOpts },
       multipliers: { exactScore: 5, correctWinner: 1, correctDraw: 4, winnerWithDiff: 3 },
-      allowWildcards: true,
+      allowWildcards,
       allowBracketChallenge: true,
       icon: { style: iconStyle, seed: iconSeed },
     }
@@ -432,6 +436,35 @@ export default function ConfigurarLigaPage({
               </div>
             </div>
           )}
+        </section>
+
+        {/* Comodines */}
+        <section className="bg-white/5 border border-white/10 rounded-2xl p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex-1 pr-4">
+              <div className="flex items-center gap-2">
+                <Sparkles size={16} className="text-purple-400" />
+                <h2 className="text-white font-bold text-sm">Comodines</h2>
+              </div>
+              <p className="text-gray-500 text-xs mt-1">
+                Todo o Nada, Escudo y Ladrón. Si los desactivás, esta liga
+                juega solo con predicciones puras.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAllowWildcards((v) => !v)}
+              className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${
+                allowWildcards ? "bg-green-500" : "bg-white/10"
+              }`}
+            >
+              <div
+                className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${
+                  allowWildcards ? "left-5" : "left-0.5"
+                }`}
+              />
+            </button>
+          </div>
         </section>
 
         {/* Opciones avanzadas */}

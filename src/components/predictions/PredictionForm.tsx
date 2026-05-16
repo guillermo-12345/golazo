@@ -25,6 +25,7 @@ type LeagueForPrediction = {
       totalShots?: boolean
       totalFouls?: boolean
     }
+    allowWildcards?: boolean
   }
 }
 
@@ -203,35 +204,37 @@ export default function PredictionForm({
         </div>
       </div>
 
-      {/* Comodines */}
-      <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
-        <div className="flex items-center gap-2 mb-3">
-          <Sparkles size={14} className="text-yellow-400" />
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Comodín</p>
-          <span className="text-xs text-gray-600">(opcional)</span>
-        </div>
+      {/* Comodines — solo si la liga los permite */}
+      {selectedLeague.config.allowWildcards !== false && (
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <Sparkles size={14} className="text-yellow-400" />
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Comodín</p>
+            <span className="text-xs text-gray-600">(opcional)</span>
+          </div>
 
-        <div className="grid grid-cols-3 gap-2">
-          <WildcardButton
-            label="Todo o Nada" description="x2 si acertás · -2 si fallás"
-            active={wildcard === "todo_o_nada"}
-            onClick={() => setWildcard(wildcard === "todo_o_nada" ? null : "todo_o_nada")}
-            color="#ef4444"
-          />
-          <WildcardButton
-            label="Escudo" description="Protege puntos avanzados"
-            active={wildcard === "escudo"}
-            onClick={() => setWildcard(wildcard === "escudo" ? null : "escudo")}
-            color="#3b82f6"
-          />
-          <WildcardButton
-            label="Ladrón" description="Robá 2 pts al líder"
-            active={wildcard === "ladron"}
-            onClick={() => setWildcard(wildcard === "ladron" ? null : "ladron")}
-            color="#a855f7"
-          />
+          <div className="grid grid-cols-3 gap-2">
+            <WildcardButton
+              label="Todo o Nada" description="x2 si acertás · -2 si fallás"
+              active={wildcard === "todo_o_nada"}
+              onClick={() => setWildcard(wildcard === "todo_o_nada" ? null : "todo_o_nada")}
+              color="#ef4444"
+            />
+            <WildcardButton
+              label="Escudo" description="Protege puntos avanzados"
+              active={wildcard === "escudo"}
+              onClick={() => setWildcard(wildcard === "escudo" ? null : "escudo")}
+              color="#3b82f6"
+            />
+            <WildcardButton
+              label="Ladrón" description="Robá 2 pts al líder"
+              active={wildcard === "ladron"}
+              onClick={() => setWildcard(wildcard === "ladron" ? null : "ladron")}
+              color="#a855f7"
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Avanzadas */}
       {hasAnyAdvanced && (

@@ -7,6 +7,7 @@ import type { Profile, Match } from "@/types/database"
 import LeagueIcon from "@/components/LeagueIcon"
 import TeamFlag from "@/components/TeamFlag"
 import DailyChallenge from "@/components/DailyChallenge"
+import WelcomeBanner from "@/components/WelcomeBanner"
 import { getLocale } from "@/lib/get-locale"
 
 export default async function DashboardPage() {
@@ -76,7 +77,7 @@ export default async function DashboardPage() {
 
   return (
     <main className="max-w-4xl mx-auto px-4 md:px-8 py-8">
-      <div className="mb-8">
+      <div className="mb-6">
         <h1 className="text-2xl md:text-3xl font-black text-white">
           Hola, <span className="text-green-500">{profile?.display_name}</span> 👋
         </h1>
@@ -86,6 +87,9 @@ export default async function DashboardPage() {
             : "¿Listo para predecir los próximos partidos?"}
         </p>
       </div>
+
+      {/* Banner de bienvenida — se muestra una sola vez */}
+      <WelcomeBanner displayName={profile?.display_name ?? ""} />
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
         <div className="bg-white/5 border border-white/10 rounded-2xl p-4 text-center">
@@ -121,6 +125,27 @@ export default async function DashboardPage() {
 
       {/* Desafío diario — solo aparece si hay partidos hoy */}
       <DailyChallenge />
+
+      {/* CTA Crear Liga — visible si el usuario solo está en la liga global */}
+      {myLeagues.length <= 1 && (
+        <Link
+          href="/ligas/crear"
+          className="flex items-center gap-4 bg-gradient-to-r from-green-500/15 to-transparent border border-green-500/30 hover:border-green-500/50 rounded-2xl p-4 mb-8 transition-colors group"
+        >
+          <div className="w-11 h-11 rounded-xl bg-green-500/20 border border-green-500/40 flex items-center justify-center shrink-0">
+            <Trophy size={20} className="text-green-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-white font-bold text-sm">Creá tu propia liga</p>
+            <p className="text-gray-400 text-xs mt-0.5">
+              Invitá a tus amigos y competí en tu tabla privada
+            </p>
+          </div>
+          <span className="text-green-400 text-xl group-hover:translate-x-0.5 transition-transform">
+            →
+          </span>
+        </Link>
+      )}
 
       <section className="mb-8">
         <div className="flex items-center justify-between mb-4">

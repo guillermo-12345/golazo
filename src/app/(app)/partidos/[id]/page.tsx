@@ -54,6 +54,7 @@ export default async function PartidoDetailPage({
           totalShots?: boolean
           totalFouls?: boolean
         }
+        allowWildcards?: boolean
       }
     } | null
   }>
