@@ -2,11 +2,15 @@
 
 import { useState } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { RefreshCw, Loader2, Check, Pencil, Search } from "lucide-react"
+import { RefreshCw, Loader2, Check, Pencil, Search, Users } from "lucide-react"
 
 export default function AdminTools() {
   const [syncing, setSyncing] = useState<string | null>(null)
   const [syncResult, setSyncResult] = useState<string | null>(null)
+
+  // Sync de planteles (jugadores)
+  const [syncingPlayers, setSyncingPlayers] = useState(false)
+  const [playersResult, setPlayersResult] = useState<string | null>(null)
 
   // Cargar resultado manual
   const [query, setQuery] = useState("")
@@ -28,6 +32,19 @@ export default function AdminTools() {
       setSyncResult("Error al sincronizar")
     }
     setSyncing(null)
+  }
+
+  async function syncPlayers() {
+    setSyncingPlayers(true)
+    setPlayersResult(null)
+    try {
+      const res = await fetch(`/api/admin/sync-players?limit=5`, { method: "POST" })
+      const data = await res.json()
+      setPlayersResult(JSON.stringify(data))
+    } catch {
+      setPlayersResult("Error al sincronizar planteles")
+    }
+    setSyncingPlayers(false)
   }
 
   async function searchMatches() {
@@ -96,6 +113,34 @@ export default function AdminTools() {
           {syncResult && (
             <pre className="mt-3 bg-black/40 border border-white/10 rounded-lg p-3 text-xs text-green-300 overflow-x-auto">
               {syncResult}
+            </pre>
+          )}
+        </div>
+      </section>
+
+      {/* Sync de planteles */}
+      <section>
+        <div className="flex items-center gap-2 mb-3">
+          <Users size={18} className="text-blue-400" />
+          <h2 className="text-lg font-bold text-white">Sync de planteles (jugadores)</h2>
+        </div>
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+          <p className="text-gray-500 text-xs mb-3">
+            Trae los jugadores de cada selección desde API-Football para elegir
+            el goleador desde una lista. Procesa 5 selecciones por vez (plan free
+            de la API). Volvé a tocar el botón hasta que <code className="text-gray-400">pendingAfter</code> llegue a 0.
+          </p>
+          <button
+            onClick={syncPlayers}
+            disabled={syncingPlayers}
+            className="flex items-center gap-2 bg-blue-500 hover:bg-blue-400 disabled:opacity-50 text-black font-bold px-4 py-2.5 rounded-xl text-sm transition-colors"
+          >
+            {syncingPlayers ? <Loader2 size={14} className="animate-spin" /> : <Users size={14} />}
+            Sincronizar lote (5)
+          </button>
+          {playersResult && (
+            <pre className="mt-3 bg-black/40 border border-white/10 rounded-lg p-3 text-xs text-blue-300 overflow-x-auto">
+              {playersResult}
             </pre>
           )}
         </div>

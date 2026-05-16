@@ -16,7 +16,7 @@ do $$
 declare
   groups jsonb := '[
     {"letter":"A","venue":"Estadio Azteca, Ciudad de México","teams":[
-      ["México","MEX"],["Sudáfrica","RSA"],["Corea del Sur","KOR"],["Chequia","CZE"]
+      ["México","MEX"],["Sudáfrica","RSA"],["Corea del Sur","KOR"],["República Checa","CZE"]
     ]},
     {"letter":"B","venue":"BMO Field, Toronto","teams":[
       ["Canadá","CAN"],["Bosnia y Herzegovina","BIH"],["Qatar","QAT"],["Suiza","SUI"]

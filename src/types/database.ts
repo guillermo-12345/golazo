@@ -284,6 +284,48 @@ export type Database = {
         }
         Update: never
       }
+      players: {
+        Row: {
+          id: string
+          team_code: string
+          api_player_id: number | null
+          name: string
+          position: string | null
+          number: number | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          team_code: string
+          api_player_id?: number | null
+          name: string
+          position?: string | null
+          number?: number | null
+          created_at?: string
+        }
+        Update: {
+          api_player_id?: number | null
+          name?: string
+          position?: string | null
+          number?: number | null
+        }
+      }
+      api_team_ids: {
+        Row: {
+          team_code: string
+          api_team_id: number
+          resolved_at: string
+        }
+        Insert: {
+          team_code: string
+          api_team_id: number
+          resolved_at?: string
+        }
+        Update: {
+          api_team_id?: number
+          resolved_at?: string
+        }
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
@@ -301,6 +343,8 @@ export type Prediction = Database["public"]["Tables"]["predictions"]["Row"]
 export type BracketPrediction = Database["public"]["Tables"]["bracket_predictions"]["Row"]
 export type Badge = Database["public"]["Tables"]["badges"]["Row"]
 export type Reaction = Database["public"]["Tables"]["reactions"]["Row"]
+export type Player = Database["public"]["Tables"]["players"]["Row"]
+export type ApiTeamId = Database["public"]["Tables"]["api_team_ids"]["Row"]
 
 // El AvatarConfig nuevo vive en @/lib/avatar (DiceBear). Este tipo se mantiene
 // solo por retro-compatibilidad si quedan registros viejos.

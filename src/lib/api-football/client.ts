@@ -71,6 +71,33 @@ export async function getFixtureStatistics(fixtureId: number): Promise<APIStatis
   return apiFetch(`/fixtures/statistics?fixture=${fixtureId}`)
 }
 
+export type APITeamSearch = {
+  team: { id: number; name: string; national: boolean }
+}
+
+export type APISquadPlayer = {
+  id: number
+  name: string
+  age: number | null
+  number: number | null
+  position: string | null
+}
+
+// Busca una selección nacional por nombre (inglés) y devuelve su team id.
+export async function searchNationalTeam(name: string): Promise<number | null> {
+  const res = await apiFetch<APITeamSearch[]>(`/teams?search=${encodeURIComponent(name)}`)
+  const national = res.find((t) => t.team.national) ?? res[0]
+  return national?.team.id ?? null
+}
+
+// Plantel actual de un equipo (no depende de temporada — anda en plan free)
+export async function getTeamSquad(teamId: number): Promise<APISquadPlayer[]> {
+  const res = await apiFetch<Array<{ team: { id: number }; players: APISquadPlayer[] }>>(
+    `/players/squads?team=${teamId}`
+  )
+  return res[0]?.players ?? []
+}
+
 export async function getLiveFixtures(): Promise<APIFixture[]> {
   return apiFetch(`/fixtures?league=${LEAGUE_ID}&season=${DEFAULT_SEASON}&live=all`)
 }

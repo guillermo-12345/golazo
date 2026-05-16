@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client"
 import { Loader2, Lock, Check, Sparkles, Minus, Plus, ChevronDown } from "lucide-react"
 import type { Match } from "@/types/database"
 import { cn } from "@/lib/utils"
+import PlayerSelect from "./PlayerSelect"
 
 type LeagueForPrediction = {
   id: string
@@ -261,12 +262,13 @@ export default function PredictionForm({
               {/* Goleador */}
               {adv.firstScorer && (
                 <AdvancedRow label="Goleador del partido" pts={5}>
-                  <input
-                    value={picks.firstScorer ?? ""}
-                    onChange={(e) => updatePick("firstScorer", e.target.value)}
-                    placeholder="Ej: Lionel Messi"
-                    maxLength={50}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-yellow-500/50"
+                  <PlayerSelect
+                    homeCode={match.home_team_code}
+                    awayCode={match.away_team_code}
+                    homeName={match.home_team}
+                    awayName={match.away_team}
+                    value={picks.firstScorer}
+                    onChange={(v) => updatePick("firstScorer", v)}
                   />
                 </AdvancedRow>
               )}
