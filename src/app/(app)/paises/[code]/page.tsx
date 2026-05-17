@@ -5,7 +5,7 @@ import {
   getQualificationSummary,
   CONFEDERATION_LABELS,
 } from "@/lib/teams"
-import type { Match, QualifierMatch } from "@/types/database"
+import type { Match, QualifierMatch, Player } from "@/types/database"
 import Link from "next/link"
 import TeamFlag from "@/components/TeamFlag"
 import CountryTabs from "@/components/paises/CountryTabs"
@@ -23,7 +23,7 @@ export default async function PaisDetailPage({
 
   const supabase = await createClient()
 
-  const [matchesRes, qualifiersRes] = await Promise.all([
+  const [matchesRes, qualifiersRes, playersRes] = await Promise.all([
     supabase
       .from("matches")
       .select("*")
@@ -34,10 +34,16 @@ export default async function PaisDetailPage({
       .select("*")
       .or(`home_team_code.eq.${team.fifaCode},away_team_code.eq.${team.fifaCode}`)
       .order("scheduled_at", { ascending: true }),
+    supabase
+      .from("players")
+      .select("name, number, position")
+      .eq("team_code", team.fifaCode)
+      .order("number", { ascending: true, nullsFirst: false }),
   ])
 
   const matches = (matchesRes.data ?? []) as Match[]
   const qualifierMatches = (qualifiersRes.data ?? []) as QualifierMatch[]
+  const players = (playersRes.data ?? []) as Pick<Player, "name" | "number" | "position">[]
   const played = matches.filter((m) => m.status === "finished")
 
   let wins = 0
@@ -113,6 +119,7 @@ export default async function PaisDetailPage({
         teamName={team.name}
         matches={matches}
         stats={stats}
+        players={players}
         qualifierMatches={qualifierMatches}
         confederationLabel={CONFEDERATION_LABELS[team.confederation]}
         qualificationSummary={getQualificationSummary(team.fifaCode) ?? ""}

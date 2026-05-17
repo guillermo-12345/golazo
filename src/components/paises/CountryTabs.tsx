@@ -24,15 +24,39 @@ type Stats = {
   goalsAgainst: number
 }
 
+type SquadPlayer = { name: string; number: number | null; position: string | null }
+
 type Props = {
   teamCode: string
   teamName: string
   matches: Match[]
   stats: Stats
+  players: SquadPlayer[]
   qualifierMatches: QualifierMatch[]
   confederationLabel: string
   qualificationSummary: string
   isHost: boolean
+}
+
+// Orden y etiqueta en español de cada línea del plantel.
+const POSITION_GROUPS: Array<{ key: string; label: string }> = [
+  { key: "Goalkeeper", label: "Arqueros" },
+  { key: "Defender", label: "Defensores" },
+  { key: "Midfielder", label: "Mediocampistas" },
+  { key: "Attacker", label: "Delanteros" },
+  { key: "__other__", label: "Otros" },
+]
+
+function groupSquad(players: SquadPlayer[]) {
+  return POSITION_GROUPS.map((g) => ({
+    ...g,
+    list:
+      g.key === "__other__"
+        ? players.filter(
+            (p) => !p.position || !POSITION_GROUPS.some((x) => x.key === p.position)
+          )
+        : players.filter((p) => p.position === g.key),
+  })).filter((g) => g.list.length > 0)
 }
 
 const TABS = [
@@ -49,12 +73,14 @@ export default function CountryTabs({
   teamName,
   matches,
   stats,
+  players,
   qualifierMatches,
   confederationLabel,
   qualificationSummary,
   isHost,
 }: Props) {
   const [tab, setTab] = useState<TabId>("partidos")
+  const squad = groupSquad(players)
 
   const played = matches.filter((m) => m.status === "finished")
   const upcoming = matches.filter((m) => m.status !== "finished")
@@ -125,10 +151,39 @@ export default function CountryTabs({
 
       {/* ───── Alineación ───── */}
       {tab === "alineacion" && (
-        <EmptyState
-          title="Alineación no disponible todavía"
-          desc={`La convocatoria y el 11 titular de ${teamName} se publicarán cuando el cuerpo técnico confirme la lista para el Mundial 2026.`}
-        />
+        <div className="space-y-6">
+          {players.length > 0 ? (
+            <>
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider">
+                  Plantel de {teamName}
+                </h2>
+                <span className="text-xs text-gray-600">{players.length} jugadores</span>
+              </div>
+              {squad.map((g) => (
+                <section key={g.key}>
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                    {g.label} <span className="text-gray-700">· {g.list.length}</span>
+                  </p>
+                  <div className="space-y-2">
+                    {g.list.map((p) => (
+                      <PlayerRow key={`${p.name}-${p.number ?? "x"}`} player={p} />
+                    ))}
+                  </div>
+                </section>
+              ))}
+              <p className="text-gray-600 text-xs text-center">
+                Plantel sincronizado desde API-Football. Puede variar hasta la
+                lista definitiva del Mundial 2026.
+              </p>
+            </>
+          ) : (
+            <EmptyState
+              title="Alineación no disponible todavía"
+              desc={`El plantel de ${teamName} se sincroniza desde la fuente oficial (API-Football). Aparecerá acá apenas se cargue.`}
+            />
+          )}
+        </div>
       )}
 
       {/* ───── Estadísticas ───── */}
@@ -359,6 +414,24 @@ function QualifierMatchRow({
           </span>
         )}
       </div>
+    </div>
+  )
+}
+
+function PlayerRow({ player }: { player: SquadPlayer }) {
+  return (
+    <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl p-3">
+      <span className="w-8 h-8 shrink-0 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-xs font-bold text-gray-400 tabular-nums">
+        {player.number ?? "–"}
+      </span>
+      <p className="flex-1 min-w-0 text-white text-sm font-medium truncate">
+        {player.name}
+      </p>
+      {player.position && (
+        <span className="shrink-0 text-[10px] uppercase tracking-wider text-gray-600">
+          {player.position}
+        </span>
+      )}
     </div>
   )
 }
