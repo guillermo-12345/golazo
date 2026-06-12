@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils"
 import PlayerSelect from "./PlayerSelect"
 import LocalDateTime from "@/components/LocalDateTime"
 import { PREDICTION_LOCK_MINUTES, predictionLockTime } from "@/lib/predictions"
+import { ADVANCED_POINTS, BASIC_POINTS } from "@/lib/scoring-values"
 
 type LeagueForPrediction = {
   id: string
@@ -27,6 +28,12 @@ type LeagueForPrediction = {
       possession?: boolean
       totalShots?: boolean
       totalFouls?: boolean
+    }
+    multipliers?: {
+      exactScore: number
+      correctWinner: number
+      correctDraw: number
+      winnerWithDiff: number
     }
     allowWildcards?: boolean
   }
@@ -86,6 +93,7 @@ export default function PredictionForm({
 
   const selectedLeague = leagues.find((l) => l.id === selectedLeagueId)!
   const adv = selectedLeague.config.advancedOptions
+  const mult = selectedLeague.config.multipliers ?? BASIC_POINTS
   const hasAnyAdvanced =
     adv?.enabled &&
     (adv.firstScorer || adv.firstTeamToScore || adv.goalMinute || adv.halftimeResult ||
@@ -223,16 +231,20 @@ export default function PredictionForm({
 
         <div className="mt-6 pt-6 border-t border-white/10 grid grid-cols-2 gap-2 text-xs">
           <div className="flex items-center justify-between text-gray-400">
-            <span>Exacto</span><span className="text-green-400 font-bold">+5</span>
+            <span>Exacto</span>
+            <span className="text-green-400 font-bold">+{mult.exactScore}</span>
           </div>
           <div className="flex items-center justify-between text-gray-400">
-            <span>Empate</span><span className="text-green-400 font-bold">+4</span>
+            <span>Ganador + diferencia</span>
+            <span className="text-green-400 font-bold">+{mult.winnerWithDiff}</span>
           </div>
           <div className="flex items-center justify-between text-gray-400">
-            <span>Ganador + diferencia</span><span className="text-green-400 font-bold">+3</span>
+            <span>Empate (no exacto)</span>
+            <span className="text-green-400 font-bold">+{mult.correctDraw}</span>
           </div>
           <div className="flex items-center justify-between text-gray-400">
-            <span>Solo ganador</span><span className="text-green-400 font-bold">+1</span>
+            <span>Solo ganador</span>
+            <span className="text-green-400 font-bold">+{mult.correctWinner}</span>
           </div>
         </div>
       </div>
@@ -293,7 +305,7 @@ export default function PredictionForm({
             <div className="px-5 pb-5 space-y-4 border-t border-white/5">
               {/* Goleador */}
               {adv.firstScorer && (
-                <AdvancedRow label="Goleador del partido" pts={5}>
+                <AdvancedRow label="Primer goleador del partido" pts={ADVANCED_POINTS.firstScorer}>
                   <PlayerSelect
                     homeCode={match.home_team_code}
                     awayCode={match.away_team_code}
@@ -307,7 +319,7 @@ export default function PredictionForm({
 
               {/* Primer equipo en marcar */}
               {adv.firstTeamToScore && (
-                <AdvancedRow label="Primer equipo en marcar" pts={3}>
+                <AdvancedRow label="Primer equipo en marcar" pts={ADVANCED_POINTS.firstTeamToScore}>
                   <PickRow
                     options={[
                       { value: "home", label: match.home_team_code },
@@ -321,7 +333,7 @@ export default function PredictionForm({
 
               {/* Minuto del primer gol */}
               {adv.goalMinute && (
-                <AdvancedRow label="Minuto del primer gol" pts={4}>
+                <AdvancedRow label="Minuto del primer gol" pts={ADVANCED_POINTS.goalMinute}>
                   <PickRow
                     options={MINUTE_RANGES.map((r) => ({ value: r, label: r + "'" }))}
                     selected={picks.goalMinute}
@@ -332,7 +344,7 @@ export default function PredictionForm({
 
               {/* Resultado al descanso */}
               {adv.halftimeResult && (
-                <AdvancedRow label="Resultado al descanso (1er tiempo)" pts={3}>
+                <AdvancedRow label="Resultado al descanso (1er tiempo)" pts={ADVANCED_POINTS.halftimeResult}>
                   <HalftimeInput
                     value={picks.halftimeResult ?? ""}
                     onChange={(v) => updatePick("halftimeResult", v)}
@@ -344,7 +356,7 @@ export default function PredictionForm({
 
               {/* Total amarillas */}
               {adv.yellowCards && (
-                <AdvancedRow label="Total tarjetas amarillas" pts={2}>
+                <AdvancedRow label="Total tarjetas amarillas" pts={ADVANCED_POINTS.yellowCards}>
                   <PickRow
                     options={YELLOW_RANGES.map((r) => ({ value: r, label: r }))}
                     selected={picks.totalYellowCards}
@@ -355,11 +367,14 @@ export default function PredictionForm({
 
               {/* Tarjeta roja */}
               {adv.redCards && (
-                <AdvancedRow label="¿Habrá tarjeta roja?" pts={3}>
+                <AdvancedRow
+                  label="¿Habrá tarjeta roja?"
+                  ptsLabel={`Sí +${ADVANCED_POINTS.redCardYes} · No +${ADVANCED_POINTS.redCardNo}`}
+                >
                   <PickRow
                     options={[
-                      { value: "yes", label: "Sí" },
-                      { value: "no", label: "No" },
+                      { value: "yes", label: `Sí (+${ADVANCED_POINTS.redCardYes})` },
+                      { value: "no", label: `No (+${ADVANCED_POINTS.redCardNo})` },
                     ]}
                     selected={picks.anyRedCard}
                     onChange={(v) => updatePick("anyRedCard", v as "yes" | "no")}
@@ -369,7 +384,7 @@ export default function PredictionForm({
 
               {/* Total córners */}
               {adv.corners && (
-                <AdvancedRow label="Total córners" pts={2}>
+                <AdvancedRow label="Total córners" pts={ADVANCED_POINTS.corners}>
                   <PickRow
                     options={CORNER_RANGES.map((r) => ({ value: r, label: r }))}
                     selected={picks.totalCorners}
@@ -380,7 +395,7 @@ export default function PredictionForm({
 
               {/* Posesión */}
               {adv.possession && (
-                <AdvancedRow label="Equipo con más posesión" pts={2}>
+                <AdvancedRow label="Equipo con más posesión" pts={ADVANCED_POINTS.possession}>
                   <PickRow
                     options={[
                       { value: "home", label: match.home_team_code },
@@ -394,7 +409,7 @@ export default function PredictionForm({
 
               {/* Total tiros */}
               {adv.totalShots && (
-                <AdvancedRow label="Total de tiros" pts={2}>
+                <AdvancedRow label="Total de tiros" pts={ADVANCED_POINTS.totalShots}>
                   <PickRow
                     options={SHOT_RANGES.map((r) => ({ value: r, label: r }))}
                     selected={picks.totalShots}
@@ -405,7 +420,7 @@ export default function PredictionForm({
 
               {/* Total faltas */}
               {adv.totalFouls && (
-                <AdvancedRow label="Total de faltas" pts={2}>
+                <AdvancedRow label="Total de faltas" pts={ADVANCED_POINTS.totalFouls}>
                   <PickRow
                     options={FOUL_RANGES.map((r) => ({ value: r, label: r }))}
                     selected={picks.totalFouls}
@@ -480,12 +495,14 @@ function WildcardButton({ label, description, active, onClick, color }: { label:
   )
 }
 
-function AdvancedRow({ label, pts, children }: { label: string; pts: number; children: React.ReactNode }) {
+function AdvancedRow({ label, pts, ptsLabel, children }: { label: string; pts?: number; ptsLabel?: string; children: React.ReactNode }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
         <p className="text-white text-sm font-medium">{label}</p>
-        <span className="text-yellow-400 text-xs font-bold">+{pts} pts</span>
+        <span className="text-yellow-400 text-xs font-bold">
+          {ptsLabel ?? `+${pts} pts`}
+        </span>
       </div>
       {children}
     </div>

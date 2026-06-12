@@ -94,7 +94,7 @@ export default function CrearLigaPage() {
       p_banner_color: bannerColor,
       p_config: {
         advancedOptions: { enabled: advancedEnabled, ...advancedOpts },
-        multipliers: { exactScore: 5, correctWinner: 1, correctDraw: 4, winnerWithDiff: 3 },
+        multipliers: { exactScore: 5, correctWinner: 1, correctDraw: 3, winnerWithDiff: 4 },
         allowWildcards,
         allowBracketChallenge: true,
         icon: { style: iconStyle, seed: iconSeed },

@@ -45,8 +45,8 @@ create table public.leagues (
     "multipliers": {
       "exactScore": 5,
       "correctWinner": 1,
-      "correctDraw": 4,
-      "winnerWithDiff": 3
+      "correctDraw": 3,
+      "winnerWithDiff": 4
     },
     "allowWildcards": true,
     "allowBracketChallenge": true
@@ -359,7 +359,7 @@ values (
   'global',
   '{
     "advancedOptions": {"enabled": false, "firstScorer": false, "goalMinute": false, "yellowCards": false, "redCards": false, "corners": false, "firstTeamToScore": false, "halftimeResult": false},
-    "multipliers": {"exactScore": 5, "correctWinner": 1, "correctDraw": 4, "winnerWithDiff": 3},
+    "multipliers": {"exactScore": 5, "correctWinner": 1, "correctDraw": 3, "winnerWithDiff": 4},
     "allowWildcards": true,
     "allowBracketChallenge": true
   }'::jsonb,

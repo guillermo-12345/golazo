@@ -67,21 +67,21 @@ export default async function ComoJugarPage() {
           />
           <PointRule
             points={4}
-            title={isAR ? "Empate correcto" : "Empate correcto"}
-            desc={
-              isAR
-                ? "Predijiste empate y terminó empate (ej: 1-1 vs el real 2-2)."
-                : "Predijiste empate y terminó empate (ej: 1-1 vs el real 2-2)."
-            }
-            color="bg-yellow-500/15 border-yellow-500/40 text-yellow-300"
-          />
-          <PointRule
-            points={3}
             title={isAR ? "Ganador con misma diferencia" : "Ganador con misma diferencia"}
             desc={
               isAR
                 ? "Acertaste el ganador y la diferencia exacta (ej: 2-1 cuando termina 3-2)."
                 : "Acertaste el ganador y la diferencia exacta (ej: 2-1 cuando termina 3-2)."
+            }
+            color="bg-yellow-500/15 border-yellow-500/40 text-yellow-300"
+          />
+          <PointRule
+            points={3}
+            title={isAR ? "Empate correcto" : "Empate correcto"}
+            desc={
+              isAR
+                ? "Predijiste empate y terminó empate, sin el resultado exacto (ej: 1-1 vs el real 2-2)."
+                : "Predijiste empate y terminó empate, sin el resultado exacto (ej: 1-1 vs el real 2-2)."
             }
             color="bg-blue-500/15 border-blue-500/40 text-blue-300"
           />
@@ -153,15 +153,21 @@ export default async function ComoJugarPage() {
             : "El creador de cada liga puede activar predicciones extra que multiplican los puntos. Para usarlas, apuestas algunos de tus puntos: si aciertas los recuperas multiplicados, si fallas los pierdes."}
         </p>
         <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Multiplicadores típicos</p>
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+            Puntos por apuesta (cuanto más difícil, más paga)
+          </p>
           <div className="grid grid-cols-2 gap-2 text-sm">
-            <AdvancedRow label="Goleador del partido" mult="x5" />
-            <AdvancedRow label="Minuto del primer gol" mult="x4" />
-            <AdvancedRow label="Primer equipo en marcar" mult="x3" />
-            <AdvancedRow label="Resultado al descanso" mult="x3" />
-            <AdvancedRow label="Tarjeta roja en el partido" mult="x3" />
-            <AdvancedRow label="Cantidad de córners" mult="x2" />
-            <AdvancedRow label="Tarjetas amarillas" mult="x2" />
+            <AdvancedRow label="Primer goleador del partido" mult="+6" />
+            <AdvancedRow label="Minuto del primer gol" mult="+5" />
+            <AdvancedRow label="Resultado al descanso" mult="+4" />
+            <AdvancedRow label="Tarjeta roja: sí" mult="+4" />
+            <AdvancedRow label="Tarjetas amarillas" mult="+3" />
+            <AdvancedRow label="Cantidad de córners" mult="+3" />
+            <AdvancedRow label="Total de tiros" mult="+3" />
+            <AdvancedRow label="Total de faltas" mult="+3" />
+            <AdvancedRow label="Primer equipo en marcar" mult="+2" />
+            <AdvancedRow label="Más posesión" mult="+1" />
+            <AdvancedRow label="Tarjeta roja: no" mult="+1" />
           </div>
         </div>
       </Section>
