@@ -13,6 +13,7 @@ import LiveScore from "@/components/matches/LiveScore"
 import LiveMatchScoreboard from "@/components/matches/LiveMatchScoreboard"
 import MatchEvents from "@/components/matches/MatchEvents"
 import MatchStatistics from "@/components/matches/MatchStatistics"
+import { isPredictionLocked } from "@/lib/predictions"
 
 export default async function PartidoDetailPage({
   params,
@@ -77,7 +78,8 @@ export default async function PartidoDetailPage({
     wildcard_used: string | null
   }>
 
-  const isLocked = match.status !== "scheduled" || new Date(match.scheduled_at) <= new Date()
+  // Cierra PREDICTION_LOCK_MINUTES antes del kickoff (también validado por RLS)
+  const isLocked = isPredictionLocked(match.scheduled_at, match.status)
 
   return (
     <main className="max-w-2xl mx-auto px-4 md:px-8 py-8">

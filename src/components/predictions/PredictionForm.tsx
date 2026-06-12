@@ -7,6 +7,8 @@ import { Loader2, Lock, Check, Sparkles, Minus, Plus, ChevronDown } from "lucide
 import type { Match } from "@/types/database"
 import { cn } from "@/lib/utils"
 import PlayerSelect from "./PlayerSelect"
+import LocalDateTime from "@/components/LocalDateTime"
+import { PREDICTION_LOCK_MINUTES, predictionLockTime } from "@/lib/predictions"
 
 type LeagueForPrediction = {
   id: string
@@ -73,6 +75,7 @@ export default function PredictionForm({
   const [selectedLeagueId, setSelectedLeagueId] = useState(leagues[0].id)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [advancedExpanded, setAdvancedExpanded] = useState(false)
 
   const existing = existingPreds.find((p) => p.league_id === selectedLeagueId)
@@ -91,9 +94,13 @@ export default function PredictionForm({
 
   async function handleSave() {
     setSaving(true)
+    setSaveError(null)
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    if (!user) {
+      setSaving(false)
+      return
+    }
 
     const { error } = await supabase.from("predictions").upsert(
       {
@@ -113,6 +120,14 @@ export default function PredictionForm({
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
       router.refresh()
+    } else if (error.code === "42501") {
+      // RLS rechazó la escritura: el corte de 65 min ya pasó
+      setSaveError(
+        `Las predicciones de este partido ya cerraron (${PREDICTION_LOCK_MINUTES} min antes del inicio).`
+      )
+      router.refresh()
+    } else {
+      setSaveError("No se pudo guardar la predicción. Intentá de nuevo.")
     }
     setSaving(false)
   }
@@ -140,13 +155,30 @@ export default function PredictionForm({
       <div className="bg-white/5 border border-white/10 rounded-2xl p-6 text-center">
         <Lock size={24} className="text-gray-500 mx-auto mb-3" />
         <p className="text-gray-300 font-medium">Las predicciones están cerradas</p>
-        <p className="text-gray-500 text-sm mt-1">Este partido ya empezó</p>
+        <p className="text-gray-500 text-sm mt-1">
+          Cierran {PREDICTION_LOCK_MINUTES} minutos antes del inicio, cuando se
+          conocen las alineaciones
+        </p>
       </div>
     )
   }
 
   return (
     <div className="space-y-4">
+      {/* Aviso de cierre anticipado */}
+      <div className="flex items-center justify-center gap-1.5 text-xs text-gray-500">
+        <Lock size={11} className="shrink-0" />
+        <span>
+          Cerrá tu predicción antes de las{" "}
+          <LocalDateTime
+            date={predictionLockTime(match.scheduled_at)}
+            formatStr="HH:mm 'del' d MMM"
+            className="text-gray-300 font-medium"
+          />{" "}
+          ({PREDICTION_LOCK_MINUTES}&apos; antes del partido)
+        </span>
+      </div>
+
       {/* Selector de liga */}
       {leagues.length > 1 && (
         <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
@@ -396,6 +428,13 @@ export default function PredictionForm({
         {saved && <Check size={18} />}
         {saving ? "Guardando..." : saved ? "¡Predicción guardada!" : existing ? "Actualizar predicción" : "Guardar predicción"}
       </button>
+
+      {saveError && (
+        <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-sm text-red-300">
+          <Lock size={14} className="shrink-0" />
+          {saveError}
+        </div>
+      )}
     </div>
   )
 }
