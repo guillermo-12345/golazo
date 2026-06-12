@@ -28,18 +28,27 @@ jobs:
             exit 1
           fi
 
-          URL="$APP_URL/api/matches/sync-espn"
+          # Normalizar APP_URL: sin espacios, https forzado y sin barras finales
+          # (una barra final o http:// producen redirecciones 308 de Vercel)
+          BASE=$(echo "$APP_URL" | tr -d '[:space:]' | sed -e 's:/*$::' -e 's:^http\://:https\://:')
+          case "$BASE" in
+            https://*) : ;;
+            *) BASE="https://$BASE" ;;
+          esac
+
+          URL="$BASE/api/matches/sync-espn"
           if [ "$FULL" = "1" ]; then
             URL="$URL?full=1"
           fi
 
           echo "POST $URL"
-          HTTP_CODE=$(curl -s -o response.json -w "%{http_code}" -X POST "$URL" \
+          # -L sigue redirecciones (308 preserva el método POST)
+          HTTP_CODE=$(curl -sS -L -o response.json -w "%{http_code}" -X POST "$URL" \
             -H "Authorization: Bearer $SERVICE_KEY")
 
           cat response.json
           echo ""
           if [ "$HTTP_CODE" != "200" ]; then
-            echo "::error::Sync falló con HTTP $HTTP_CODE"
+            echo "::error::Sync falló con HTTP $HTTP_CODE (URL final: $URL). Revisá que APP_URL sea el dominio público de producción."
             exit 1
           fi
