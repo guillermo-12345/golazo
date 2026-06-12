@@ -8,7 +8,9 @@ export const maxDuration = 60
  * Dispara el sync de planteles desde el panel de admin.
  * Verifica admin por sesión, luego llama al endpoint de sync con la service key.
  *
- * Pasa `limit`, `code` y `force` tal cual a /api/players/sync.
+ * Por defecto usa ESPN (planteles oficiales del Mundial, los 26 convocados).
+ * Con ?source=apifootball usa el sync viejo de API-Football (pasa `limit`,
+ * `code` y `force` tal cual).
  */
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -19,6 +21,7 @@ export async function POST(request: Request) {
   }
 
   const url = new URL(request.url)
+  const source = url.searchParams.get("source") ?? "espn"
   const params = new URLSearchParams()
   const limit = url.searchParams.get("limit")
   const code = url.searchParams.get("code")
@@ -27,8 +30,9 @@ export async function POST(request: Request) {
   if (code) params.set("code", code)
   if (force) params.set("force", force)
 
+  const basePath = source === "apifootball" ? "/api/players/sync" : "/api/players/sync-espn"
   const syncUrl = new URL(
-    `/api/players/sync${params.toString() ? "?" + params.toString() : ""}`,
+    `${basePath}${params.toString() ? "?" + params.toString() : ""}`,
     request.url
   )
 

@@ -14,6 +14,39 @@
 -- partidos del día, contra los resultados reales.
 --
 -- Valores espejados en src/lib/scoring-values.ts (DAILY_CHALLENGE_POINTS).
+--
+-- AUTO-CONTENIDA: incluye la tabla daily_challenges (la migración 004
+-- tenía un error de sintaxis en un drop policy y pudo no haberse
+-- aplicado nunca). Es seguro correrla aunque la tabla ya exista.
+
+create table if not exists public.daily_challenges (
+  user_id uuid references public.profiles(id) on delete cascade not null,
+  challenge_date date not null,
+  matches_total integer not null,
+  matches_predicted integer not null,
+  completed boolean not null default false,
+  reward_given boolean not null default false,
+  bonus_points integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key (user_id, challenge_date)
+);
+
+create index if not exists idx_daily_challenges_date on public.daily_challenges(challenge_date);
+
+alter table public.daily_challenges enable row level security;
+
+drop policy if exists "daily_challenges_select" on public.daily_challenges;
+create policy "daily_challenges_select" on public.daily_challenges for select
+using (auth.uid() = user_id);
+
+drop policy if exists "daily_challenges_insert" on public.daily_challenges;
+create policy "daily_challenges_insert" on public.daily_challenges for insert
+with check (auth.uid() = user_id);
+
+drop policy if exists "daily_challenges_update" on public.daily_challenges;
+create policy "daily_challenges_update" on public.daily_challenges for update
+using (auth.uid() = user_id);
 
 -- Columnas nuevas para los niveles por resultado
 alter table public.daily_challenges

@@ -82,6 +82,8 @@ export default function PredictionForm({
   const [selectedLeagueId, setSelectedLeagueId] = useState(leagues[0].id)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [savedCount, setSavedCount] = useState(1)
+  const [applyAll, setApplyAll] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [advancedExpanded, setAdvancedExpanded] = useState(false)
 
@@ -100,6 +102,32 @@ export default function PredictionForm({
       adv.yellowCards || adv.redCards || adv.corners || adv.possession ||
       adv.totalShots || adv.totalFouls)
 
+  // Filtra los picks avanzados según las opciones habilitadas en cada liga
+  // (al guardar en todas, una liga sin córners no debe recibir ese pick).
+  function picksForLeague(league: LeagueForPrediction): AdvancedPicks {
+    const a = league.config.advancedOptions
+    if (!a?.enabled) return {}
+    const flagByPick: Record<keyof AdvancedPicks, boolean | undefined> = {
+      firstScorer: a.firstScorer,
+      firstTeamToScore: a.firstTeamToScore,
+      goalMinute: a.goalMinute,
+      halftimeResult: a.halftimeResult,
+      totalYellowCards: a.yellowCards,
+      anyRedCard: a.redCards,
+      totalCorners: a.corners,
+      morePossession: a.possession,
+      totalShots: a.totalShots,
+      totalFouls: a.totalFouls,
+    }
+    const out: AdvancedPicks = {}
+    for (const key of Object.keys(picks) as Array<keyof AdvancedPicks>) {
+      if (flagByPick[key]) {
+        Object.assign(out, { [key]: picks[key] })
+      }
+    }
+    return out
+  }
+
   async function handleSave() {
     setSaving(true)
     setSaveError(null)
@@ -110,21 +138,25 @@ export default function PredictionForm({
       return
     }
 
-    const { error } = await supabase.from("predictions").upsert(
-      {
-        user_id: user.id,
-        match_id: match.id,
-        league_id: selectedLeagueId,
-        home_score_pred: homeScore,
-        away_score_pred: awayScore,
-        wildcard_used: wildcard,
-        advanced_picks: picks,
-        points_wagered: 0,
-      },
-      { onConflict: "user_id,match_id,league_id" }
-    )
+    const targetLeagues = applyAll && leagues.length > 1 ? leagues : [selectedLeague]
+    const rows = targetLeagues.map((l) => ({
+      user_id: user.id,
+      match_id: match.id,
+      league_id: l.id,
+      home_score_pred: homeScore,
+      away_score_pred: awayScore,
+      // El comodín solo va a ligas que los permiten
+      wildcard_used: l.config.allowWildcards !== false ? wildcard : null,
+      advanced_picks: picksForLeague(l),
+      points_wagered: 0,
+    }))
+
+    const { error } = await supabase
+      .from("predictions")
+      .upsert(rows, { onConflict: "user_id,match_id,league_id" })
 
     if (!error) {
+      setSavedCount(targetLeagues.length)
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
       router.refresh()
@@ -433,6 +465,22 @@ export default function PredictionForm({
         </div>
       )}
 
+      {/* Aplicar a todas las ligas */}
+      {leagues.length > 1 && (
+        <label className="flex items-center gap-3 bg-white/5 border border-white/10 hover:border-green-500/30 rounded-xl px-4 py-3 cursor-pointer transition-colors">
+          <input
+            type="checkbox"
+            checked={applyAll}
+            onChange={(e) => setApplyAll(e.target.checked)}
+            className="w-4 h-4 accent-green-500 shrink-0"
+          />
+          <span className="text-sm text-gray-300">
+            Guardar esta predicción en{" "}
+            <span className="text-white font-bold">todas mis ligas ({leagues.length})</span>
+          </span>
+        </label>
+      )}
+
       {/* Guardar */}
       <button
         onClick={handleSave}
@@ -441,7 +489,15 @@ export default function PredictionForm({
       >
         {saving && <Loader2 size={18} className="animate-spin" />}
         {saved && <Check size={18} />}
-        {saving ? "Guardando..." : saved ? "¡Predicción guardada!" : existing ? "Actualizar predicción" : "Guardar predicción"}
+        {saving
+          ? "Guardando..."
+          : saved
+          ? savedCount > 1
+            ? `¡Guardada en ${savedCount} ligas!`
+            : "¡Predicción guardada!"
+          : existing
+          ? "Actualizar predicción"
+          : "Guardar predicción"}
       </button>
 
       {saveError && (

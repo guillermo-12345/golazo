@@ -132,6 +132,81 @@ export async function getEspnEventsForDate(yyyymmdd: string): Promise<EspnEvent[
   return events
 }
 
+// ─────────────────────────────────────────────
+// Planteles oficiales (rosters)
+// ─────────────────────────────────────────────
+
+export type EspnPlayer = {
+  name: string
+  number: number | null
+  /** Goalkeeper | Defender | Midfielder | Attacker (mapeado de ESPN) */
+  position: string | null
+}
+
+// ESPN usa "Forward"; nuestra DB agrupa con la convención de API-Football.
+const POSITION_MAP: Record<string, string> = {
+  Goalkeeper: "Goalkeeper",
+  Defender: "Defender",
+  Midfielder: "Midfielder",
+  Forward: "Attacker",
+  Attacker: "Attacker",
+}
+
+/**
+ * Mapa code FIFA -> id de equipo en ESPN, armado desde los scoreboards de
+ * la primera fecha de grupos (11-17 jun: ahí juegan los 48 equipos).
+ */
+export async function getEspnTeamIdMap(): Promise<Map<string, number>> {
+  const map = new Map<string, number>()
+  for (const day of dateRange(new Date("2026-06-11"), new Date("2026-06-17"))) {
+    const res = await fetch(`${SCOREBOARD_URL}?dates=${day}`, {
+      next: { revalidate: 3600 },
+    })
+    if (!res.ok) continue
+    const data = (await res.json()) as EspnScoreboard
+    for (const e of data.events ?? []) {
+      for (const c of e.competitions[0]?.competitors ?? []) {
+        const code = espnNameToCode(c.team.displayName)
+        const id = parseInt((c.team as { id?: string }).id ?? "", 10)
+        if (code && Number.isFinite(id)) map.set(code, id)
+      }
+    }
+  }
+  return map
+}
+
+type EspnRoster = {
+  athletes?: Array<{
+    displayName?: string
+    fullName?: string
+    jersey?: string
+    position?: { name?: string }
+  }>
+}
+
+/** Plantel oficial del Mundial según ESPN (los 26 convocados). */
+export async function getEspnRoster(teamId: number): Promise<EspnPlayer[]> {
+  const res = await fetch(
+    `https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/teams/${teamId}/roster`,
+    { next: { revalidate: 3600 } }
+  )
+  if (!res.ok) throw new Error(`ESPN roster error: ${res.status}`)
+  const data = (await res.json()) as EspnRoster
+
+  return (data.athletes ?? [])
+    .map((a) => {
+      const name = a.displayName ?? a.fullName ?? ""
+      const num = parseInt(a.jersey ?? "", 10)
+      const rawPos = a.position?.name
+      return {
+        name,
+        number: Number.isFinite(num) ? num : null,
+        position: rawPos ? POSITION_MAP[rawPos] ?? rawPos : null,
+      }
+    })
+    .filter((p) => p.name.length > 0)
+}
+
 /** Lista de días UTC (YYYYMMDD) entre dos fechas inclusive. */
 export function dateRange(from: Date, to: Date): string[] {
   const days: string[] = []

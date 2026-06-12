@@ -38,7 +38,8 @@ export default function AdminTools() {
     setSyncingPlayers(true)
     setPlayersResult(null)
     try {
-      const res = await fetch(`/api/admin/sync-players?limit=5`, { method: "POST" })
+      // ESPN: planteles oficiales del Mundial (26 convocados por selección)
+      const res = await fetch(`/api/admin/sync-players`, { method: "POST" })
       const data = await res.json()
       setPlayersResult(JSON.stringify(data))
     } catch {
@@ -147,9 +148,10 @@ export default function AdminTools() {
         </div>
         <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
           <p className="text-gray-500 text-xs mb-3">
-            Trae los jugadores de cada selección desde API-Football para elegir
-            el goleador desde una lista. Procesa 5 selecciones por vez (plan free
-            de la API). Volvé a tocar el botón hasta que <code className="text-gray-400">pendingAfter</code> llegue a 0.
+            Trae los <span className="text-blue-300 font-bold">planteles oficiales del Mundial desde ESPN</span>{" "}
+            (los 26 convocados de cada selección, con dorsal y posición) y
+            reemplaza los planteles viejos. Un solo toque sincroniza los 48
+            equipos. Usalo de nuevo si alguna federación cambia un convocado.
           </p>
           <button
             onClick={syncPlayers}
@@ -157,7 +159,7 @@ export default function AdminTools() {
             className="flex items-center gap-2 bg-blue-500 hover:bg-blue-400 disabled:opacity-50 text-black font-bold px-4 py-2.5 rounded-xl text-sm transition-colors"
           >
             {syncingPlayers ? <Loader2 size={14} className="animate-spin" /> : <Users size={14} />}
-            Sincronizar lote (5)
+            Sincronizar planteles oficiales (48)
           </button>
           {playersResult && (
             <pre className="mt-3 bg-black/40 border border-white/10 rounded-lg p-3 text-xs text-blue-300 overflow-x-auto">
