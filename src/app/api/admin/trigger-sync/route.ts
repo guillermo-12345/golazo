@@ -17,8 +17,22 @@ export async function POST(request: Request) {
   }
 
   const url = new URL(request.url)
-  const mode = url.searchParams.get("mode") // "full" | "live" | dry
+  const mode = url.searchParams.get("mode") // "full" | "live" | "espn" | "espn-full"
   const season = url.searchParams.get("season")
+
+  // Sync vía ESPN (calendario real + marcadores; no consume API-Football)
+  if (mode === "espn" || mode === "espn-full") {
+    const espnUrl = new URL(
+      `/api/matches/sync-espn${mode === "espn-full" ? "?full=1" : ""}`,
+      request.url
+    )
+    const res = await fetch(espnUrl, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}` },
+    })
+    const data = await res.json()
+    return Response.json(data, { status: res.status })
+  }
 
   const params = new URLSearchParams()
   if (mode === "live") params.set("live", "1")

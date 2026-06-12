@@ -20,9 +20,21 @@ type Props = {
 }
 
 /**
+ * Vista de la fecha con la pared horaria de UTC, independiente de la TZ del
+ * runtime. Así el primer render del cliente produce el mismo string que el
+ * SSR (que corre en UTC en Vercel) y React sí aplica el cambio a TZ local
+ * después del mount. Sin esto, el texto UTC del servidor quedaba congelado:
+ * la hidratación ya calculaba la hora local, el re-render post-mount no
+ * detectaba diferencia y el DOM nunca se actualizaba.
+ */
+function utcView(d: Date): Date {
+  return new Date(d.getTime() + d.getTimezoneOffset() * 60000)
+}
+
+/**
  * Renderiza una fecha en la zona horaria local del navegador.
- * En el servidor renderiza la fecha en UTC para evitar hydration mismatch,
- * y en el cliente se actualiza a la TZ local del usuario.
+ * En el servidor (y la hidratación) renderiza la fecha en UTC para evitar
+ * hydration mismatch, y tras el mount se actualiza a la TZ local del usuario.
  */
 export default function LocalDateTime({
   date,
@@ -37,11 +49,7 @@ export default function LocalDateTime({
     setMounted(true)
   }, [])
 
-  // En SSR mostramos UTC para que no haya hydration mismatch
-  // En cliente (después de mount) cambiamos a TZ local
-  const formatted = mounted
-    ? format(d, formatStr, { locale: es })
-    : format(d, formatStr, { locale: es })
+  const formatted = format(mounted ? d : utcView(d), formatStr, { locale: es })
 
   const tz = mounted ? Intl.DateTimeFormat().resolvedOptions().timeZone : ""
 

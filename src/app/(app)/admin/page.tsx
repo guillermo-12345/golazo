@@ -1,8 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { Shield, Users, Trophy, Target, MessageCircle, Activity } from "lucide-react"
 import AdminTools from "@/components/admin/AdminTools"
-import { format } from "date-fns"
-import { es } from "date-fns/locale"
+import LocalDateTime from "@/components/LocalDateTime"
 
 export const dynamic = "force-dynamic"
 
@@ -90,7 +89,7 @@ export default async function AdminPage() {
                 />
                 <span className="text-gray-400 text-xs w-16">{log.source}</span>
                 <span className="text-gray-500 text-xs flex-1">
-                  {format(new Date(log.started_at), "d MMM HH:mm", { locale: es })}
+                  <LocalDateTime date={log.started_at} formatStr="d MMM HH:mm" />
                 </span>
                 {log.error ? (
                   <span className="text-red-400 text-xs truncate max-w-[200px]">{log.error}</span>
@@ -120,7 +119,7 @@ export default async function AdminPage() {
               <span className="text-white font-medium flex-1">{u.display_name}</span>
               <span className="text-gray-500 text-xs">@{u.username}</span>
               <span className="text-gray-600 text-xs">
-                {format(new Date(u.created_at), "d MMM", { locale: es })}
+                <LocalDateTime date={u.created_at} formatStr="d MMM" />
               </span>
             </div>
           ))}

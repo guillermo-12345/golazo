@@ -21,7 +21,7 @@ export default function AdminTools() {
   const [savingMatch, setSavingMatch] = useState(false)
   const [matchSaved, setMatchSaved] = useState(false)
 
-  async function triggerSync(mode: "full" | "live") {
+  async function triggerSync(mode: "full" | "live" | "espn" | "espn-full") {
     setSyncing(mode)
     setSyncResult(null)
     try {
@@ -89,17 +89,38 @@ export default function AdminTools() {
       <section>
         <div className="flex items-center gap-2 mb-3">
           <RefreshCw size={18} className="text-green-400" />
-          <h2 className="text-lg font-bold text-white">Sincronización con API-Football</h2>
+          <h2 className="text-lg font-bold text-white">Sincronización de resultados</h2>
         </div>
         <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+          <p className="text-gray-500 text-xs mb-3">
+            <span className="text-green-400 font-bold">ESPN</span> trae calendario real y
+            marcadores gratis (recomendado mientras API-Football siga en plan free).
+            El sync ESPN cubre ayer/hoy/mañana; el completo, toda la fase de grupos.
+          </p>
           <div className="flex flex-wrap gap-3">
             <button
-              onClick={() => triggerSync("full")}
+              onClick={() => triggerSync("espn")}
               disabled={syncing !== null}
               className="flex items-center gap-2 bg-green-500 hover:bg-green-400 disabled:opacity-50 text-black font-bold px-4 py-2.5 rounded-xl text-sm transition-colors"
             >
+              {syncing === "espn" ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+              Sync ESPN (hoy)
+            </button>
+            <button
+              onClick={() => triggerSync("espn-full")}
+              disabled={syncing !== null}
+              className="flex items-center gap-2 bg-green-500/20 hover:bg-green-500/30 disabled:opacity-50 text-green-300 font-bold px-4 py-2.5 rounded-xl text-sm transition-colors border border-green-500/30"
+            >
+              {syncing === "espn-full" ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+              Sync ESPN completo
+            </button>
+            <button
+              onClick={() => triggerSync("full")}
+              disabled={syncing !== null}
+              className="flex items-center gap-2 bg-white/10 hover:bg-white/15 disabled:opacity-50 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition-colors"
+            >
               {syncing === "full" ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-              Sync completo
+              API-Football
             </button>
             <button
               onClick={() => triggerSync("live")}
@@ -107,7 +128,7 @@ export default function AdminTools() {
               className="flex items-center gap-2 bg-white/10 hover:bg-white/15 disabled:opacity-50 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition-colors"
             >
               {syncing === "live" ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-              Sync en vivo
+              API-Football en vivo
             </button>
           </div>
           {syncResult && (

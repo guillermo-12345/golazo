@@ -1,9 +1,8 @@
 import { createClient } from "@/lib/supabase/server"
 import { Trophy, Target, Flame, TrendingUp, TrendingDown, Award, Calendar, ChartBar } from "lucide-react"
 import Link from "next/link"
-import { format } from "date-fns"
-import { es } from "date-fns/locale"
 import TeamFlag from "@/components/TeamFlag"
+import LocalDateTime from "@/components/LocalDateTime"
 
 type PredWithMatch = {
   id: string
@@ -366,7 +365,7 @@ function PredRow({ pred }: { pred: PredWithMatch }) {
       }`}
     >
       <span className="text-xs text-gray-600 w-16 truncate">
-        {format(new Date(m.scheduled_at), "d MMM", { locale: es })}
+        <LocalDateTime date={m.scheduled_at} formatStr="d MMM" />
       </span>
 
       <div className="flex items-center gap-2 flex-1 min-w-0 text-sm">

@@ -1,0 +1,45 @@
+name: Sync resultados (ESPN)
+
+on:
+  schedule:
+    # Cada 20 minutos durante el Mundial (11 jun - 19 jul 2026).
+    # ESPN es gratis: esto NO consume consultas de API-Football.
+    - cron: "*/20 * * * *"
+  workflow_dispatch:
+    inputs:
+      full:
+        description: "Sincronizar toda la fase de grupos (no solo ayer/hoy/mañana)"
+        type: boolean
+        default: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Llamar al endpoint de sync ESPN
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          FULL: ${{ inputs.full && '1' || '' }}
+        run: |
+          if [ -z "$APP_URL" ] || [ -z "$SERVICE_KEY" ]; then
+            echo "::error::Faltan secrets APP_URL o SUPABASE_SERVICE_ROLE_KEY"
+            exit 1
+          fi
+
+          URL="$APP_URL/api/matches/sync-espn"
+          if [ "$FULL" = "1" ]; then
+            URL="$URL?full=1"
+          fi
+
+          echo "POST $URL"
+          HTTP_CODE=$(curl -s -o response.json -w "%{http_code}" -X POST "$URL" \
+            -H "Authorization: Bearer $SERVICE_KEY")
+
+          cat response.json
+          echo ""
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "::error::Sync falló con HTTP $HTTP_CODE"
+            exit 1
+          fi
