@@ -11,6 +11,8 @@ const SCOREBOARD_URL =
   "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard"
 
 export type EspnEvent = {
+  /** id del evento en ESPN (para pedir el summary con detalles) */
+  eventId: string
   homeCode: string
   awayCode: string
   /** ISO UTC del kickoff real */
@@ -65,6 +67,7 @@ export function espnNameToCode(name: string): string | null {
 
 type EspnScoreboard = {
   events?: Array<{
+    id: string
     date: string
     competitions: Array<{
       status: {
@@ -118,6 +121,7 @@ export async function getEspnEventsForDate(yyyymmdd: string): Promise<EspnEvent[
     const state = comp.status.type.state as EspnEvent["state"]
 
     events.push({
+      eventId: e.id,
       homeCode,
       awayCode,
       date: e.date,
@@ -205,6 +209,187 @@ export async function getEspnRoster(teamId: number): Promise<EspnPlayer[]> {
       }
     })
     .filter((p) => p.name.length > 0)
+}
+
+// ─────────────────────────────────────────────
+// Detalles del partido (summary): goles, tarjetas, descanso, estadísticas
+// ─────────────────────────────────────────────
+
+export type EspnTeamStats = {
+  corners: number
+  yellowCards: number
+  redCards: number
+  /** % entero (60.5 → 60) — el motor SQL castea a int */
+  possession: number
+  totalShots: number
+  fouls: number
+  shotsOnGoal: number
+  saves: number
+  offsides: number
+  /** % entero de pases acertados */
+  passPct: number
+}
+
+export type EspnKeyEvent = {
+  minute: number
+  extra: number | null
+  teamCode: string | null
+  player: string | null
+  /** Goal | Card | subst (convención API-Football que ya usa la UI) */
+  type: string
+  detail: string
+}
+
+export type EspnMatchDetails = {
+  /** Lado según ESPN — el caller orienta con esto */
+  homeCode: string | null
+  awayCode: string | null
+  halftime: { home: number; away: number } | null
+  firstScorer: string | null
+  firstScorerTeamCode: string | null
+  firstGoalMinute: number | null
+  stats: { home: EspnTeamStats; away: EspnTeamStats } | null
+  events: EspnKeyEvent[]
+}
+
+// type.text de ESPN -> {type, detail} estilo API-Football (lo que espera MatchEvents)
+const KEY_EVENT_MAP: Record<string, { type: string; detail: string }> = {
+  "Goal": { type: "Goal", detail: "Normal Goal" },
+  "Goal - Header": { type: "Goal", detail: "Normal Goal" },
+  "Goal - Free Kick": { type: "Goal", detail: "Free Kick Goal" },
+  "Goal - Volley": { type: "Goal", detail: "Normal Goal" },
+  "Penalty - Scored": { type: "Goal", detail: "Penalty" },
+  "Own Goal": { type: "Goal", detail: "Own Goal" },
+  "Yellow Card": { type: "Card", detail: "Yellow Card" },
+  "Red Card": { type: "Card", detail: "Red Card" },
+  "Substitution": { type: "subst", detail: "Substitution" },
+}
+
+/** "45'+4'" → {minute:45, extra:4} · "9'" → {minute:9, extra:null} */
+function parseClock(display: string | undefined): { minute: number; extra: number | null } | null {
+  if (!display) return null
+  const m = display.match(/^(\d+)'(?:\+(\d+))?/)
+  if (!m) return null
+  return { minute: parseInt(m[1], 10), extra: m[2] ? parseInt(m[2], 10) : null }
+}
+
+function toNum(v: string | undefined): number {
+  const n = parseFloat(v ?? "")
+  return Number.isFinite(n) ? n : 0
+}
+
+type EspnSummary = {
+  header?: {
+    competitions?: Array<{
+      competitors?: Array<{
+        homeAway?: "home" | "away"
+        team?: { displayName?: string }
+        linescores?: Array<{ displayValue?: string }>
+      }>
+    }>
+  }
+  keyEvents?: Array<{
+    type?: { text?: string }
+    clock?: { displayValue?: string }
+    team?: { displayName?: string }
+    participants?: Array<{ athlete?: { displayName?: string } }>
+  }>
+  boxscore?: {
+    teams?: Array<{
+      team?: { displayName?: string }
+      statistics?: Array<{ name?: string; displayValue?: string }>
+    }>
+  }
+}
+
+/**
+ * Detalles de un partido terminado/en juego: lo que necesita el motor de
+ * predicciones avanzadas (goleador, minuto, descanso, tarjetas, córners,
+ * posesión, tiros, faltas) + eventos para la página del partido.
+ */
+export async function getEspnMatchDetails(eventId: string): Promise<EspnMatchDetails> {
+  const res = await fetch(
+    `https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/summary?event=${eventId}`,
+    { next: { revalidate: 300 } }
+  )
+  if (!res.ok) throw new Error(`ESPN summary error: ${res.status}`)
+  const data = (await res.json()) as EspnSummary
+
+  // Lados y descanso (primer linescore = primer tiempo)
+  const competitors = data.header?.competitions?.[0]?.competitors ?? []
+  const homeComp = competitors.find((c) => c.homeAway === "home")
+  const awayComp = competitors.find((c) => c.homeAway === "away")
+  const homeCode = homeComp?.team?.displayName ? espnNameToCode(homeComp.team.displayName) : null
+  const awayCode = awayComp?.team?.displayName ? espnNameToCode(awayComp.team.displayName) : null
+
+  let halftime: EspnMatchDetails["halftime"] = null
+  const hHT = homeComp?.linescores?.[0]?.displayValue
+  const aHT = awayComp?.linescores?.[0]?.displayValue
+  if (hHT !== undefined && aHT !== undefined) {
+    halftime = { home: parseInt(hHT, 10) || 0, away: parseInt(aHT, 10) || 0 }
+  }
+
+  // Eventos clave (goles, tarjetas, cambios) en orden cronológico
+  const events: EspnKeyEvent[] = []
+  for (const ke of data.keyEvents ?? []) {
+    const mapped = KEY_EVENT_MAP[ke.type?.text ?? ""]
+    if (!mapped) continue
+    const clock = parseClock(ke.clock?.displayValue)
+    if (!clock) continue
+    events.push({
+      minute: clock.minute,
+      extra: clock.extra,
+      teamCode: ke.team?.displayName ? espnNameToCode(ke.team.displayName) : null,
+      player: ke.participants?.[0]?.athlete?.displayName ?? null,
+      type: mapped.type,
+      detail: mapped.detail,
+    })
+  }
+
+  // Primer gol
+  const firstGoal = events.find((e) => e.type === "Goal")
+
+  // Estadísticas por equipo (boxscore)
+  let stats: EspnMatchDetails["stats"] = null
+  const boxTeams = data.boxscore?.teams ?? []
+  if (boxTeams.length === 2 && homeCode) {
+    const parseTeam = (t: (typeof boxTeams)[number]): EspnTeamStats => {
+      const byName: Record<string, string | undefined> = {}
+      for (const st of t.statistics ?? []) {
+        if (st.name) byName[st.name] = st.displayValue
+      }
+      return {
+        corners: Math.round(toNum(byName.wonCorners)),
+        yellowCards: Math.round(toNum(byName.yellowCards)),
+        redCards: Math.round(toNum(byName.redCards)),
+        possession: Math.round(toNum(byName.possessionPct)),
+        totalShots: Math.round(toNum(byName.totalShots)),
+        fouls: Math.round(toNum(byName.foulsCommitted)),
+        shotsOnGoal: Math.round(toNum(byName.shotsOnTarget)),
+        saves: Math.round(toNum(byName.saves)),
+        offsides: Math.round(toNum(byName.offsides)),
+        passPct: Math.round(toNum(byName.passPct) * 100),
+      }
+    }
+    const homeBox = boxTeams.find(
+      (t) => t.team?.displayName && espnNameToCode(t.team.displayName) === homeCode
+    )
+    const awayBox = boxTeams.find((t) => t !== homeBox)
+    if (homeBox && awayBox) {
+      stats = { home: parseTeam(homeBox), away: parseTeam(awayBox) }
+    }
+  }
+
+  return {
+    homeCode,
+    awayCode,
+    halftime,
+    firstScorer: firstGoal?.player ?? null,
+    firstScorerTeamCode: firstGoal?.teamCode ?? null,
+    firstGoalMinute: firstGoal?.minute ?? null,
+    stats,
+    events,
+  }
 }
 
 /** Lista de días UTC (YYYYMMDD) entre dos fechas inclusive. */

@@ -1,5 +1,12 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js"
-import { getEspnEventsForDate, dateRange, type EspnEvent } from "@/lib/espn/client"
+import {
+  getEspnEventsForDate,
+  getEspnMatchDetails,
+  dateRange,
+  type EspnEvent,
+  type EspnMatchDetails,
+  type EspnTeamStats,
+} from "@/lib/espn/client"
 
 /**
  * Sincronización de calendario y marcadores desde la API pública de ESPN.
@@ -40,10 +47,81 @@ type DbMatch = {
   home_score: number | null
   away_score: number | null
   minute: number | null
+  extra_data: Record<string, unknown> | null
 }
 
 function pairKey(a: string, b: string): string {
   return [a, b].sort().join("|")
+}
+
+/**
+ * Construye el extra_data que consume el motor de predicciones avanzadas
+ * (migración 006/011) y la página del partido (events + statistics estilo
+ * API-Football), orientado al local/visitante de NUESTRA base.
+ */
+function buildExtraData(m: DbMatch, ev: EspnEvent, det: EspnMatchDetails): Record<string, unknown> {
+  const flipped = (det.homeCode ?? ev.homeCode) !== m.home_team_code
+  const teamName = (code: string | null) =>
+    code === m.home_team_code ? m.home_team : code === m.away_team_code ? m.away_team : code ?? ""
+
+  const extra: Record<string, unknown> = {
+    fulltime: {
+      home: flipped ? ev.awayScore : ev.homeScore,
+      away: flipped ? ev.homeScore : ev.awayScore,
+    },
+  }
+
+  if (det.halftime) {
+    extra.halftime = flipped
+      ? { home: det.halftime.away, away: det.halftime.home }
+      : det.halftime
+  }
+
+  if (det.firstScorer) {
+    extra.firstScorer = det.firstScorer
+    extra.firstScorerTeam = teamName(det.firstScorerTeamCode)
+    extra.firstGoalMinute = det.firstGoalMinute
+    extra.firstTeamToScore = det.firstScorerTeamCode === m.home_team_code ? "home" : "away"
+  }
+
+  if (det.stats) {
+    const side = flipped ? { home: det.stats.away, away: det.stats.home } : det.stats
+    extra.corners = { home: side.home.corners, away: side.away.corners }
+    extra.yellowCards = { home: side.home.yellowCards, away: side.away.yellowCards }
+    extra.redCards = { home: side.home.redCards, away: side.away.redCards }
+    extra.possession = { home: side.home.possession, away: side.away.possession }
+    extra.totalShots = { home: side.home.totalShots, away: side.away.totalShots }
+    extra.fouls = { home: side.home.fouls, away: side.away.fouls }
+
+    const statRow = (name: string, s: EspnTeamStats) => ({
+      team: { name },
+      statistics: [
+        { type: "Ball Possession", value: `${s.possession}%` },
+        { type: "Total Shots", value: s.totalShots },
+        { type: "Shots on Goal", value: s.shotsOnGoal },
+        { type: "Corner Kicks", value: s.corners },
+        { type: "Fouls", value: s.fouls },
+        { type: "Yellow Cards", value: s.yellowCards },
+        { type: "Red Cards", value: s.redCards },
+        { type: "Offsides", value: s.offsides },
+        { type: "Goalkeeper Saves", value: s.saves },
+        { type: "Passes %", value: `${s.passPct}%` },
+      ],
+    })
+    extra.statistics = [statRow(m.home_team, side.home), statRow(m.away_team, side.away)]
+  }
+
+  if (det.events.length > 0) {
+    extra.events = det.events.map((e) => ({
+      time: { elapsed: e.minute, extra: e.extra },
+      team: { name: teamName(e.teamCode) },
+      player: e.player ? { name: e.player } : null,
+      type: e.type,
+      detail: e.detail,
+    }))
+  }
+
+  return extra
 }
 
 function buildPatch(m: DbMatch, ev: EspnEvent): Record<string, unknown> {
@@ -143,7 +221,7 @@ export async function POST(request: Request) {
     const { data: matchesData, error: mErr } = await supabase
       .from("matches")
       .select(
-        "id, home_team, away_team, home_team_code, away_team_code, scheduled_at, venue, status, home_score, away_score, minute"
+        "id, home_team, away_team, home_team_code, away_team_code, scheduled_at, venue, status, home_score, away_score, minute, extra_data"
       )
       .eq("stage", "group_stage")
     if (mErr) throw mErr
@@ -154,6 +232,7 @@ export async function POST(request: Request) {
     let updated = 0
     let finished = 0
     let live = 0
+    let detailsFetched = 0
     const changes: Array<{ match: string; fields: string[] }> = []
 
     for (const m of matches) {
@@ -161,6 +240,25 @@ export async function POST(request: Request) {
       if (!ev) continue
 
       const patch = buildPatch(m, ev)
+
+      // Detalles (goleador, descanso, tarjetas, stats) para partidos terminados:
+      // al momento de terminar van en el MISMO patch que el marcador, así el
+      // trigger puntúa las avanzadas con la data ya presente. Para partidos ya
+      // terminados sin detalles (backfill) solo se completa extra_data — eso no
+      // re-dispara el trigger (el marcador no cambia), o sea sin notifs duplicadas.
+      const justFinished = patch.status === "finished"
+      const hasDetails = !!m.extra_data?.halftime
+      if (ev.completed && (justFinished || !hasDetails)) {
+        try {
+          const det = await getEspnMatchDetails(ev.eventId)
+          patch.extra_data = { ...(m.extra_data ?? {}), ...buildExtraData(m, ev, det) }
+          detailsFetched++
+        } catch (err) {
+          // Sin detalles el marcador igual se aplica; el backfill reintenta solo
+          console.error("espn summary error", ev.eventId, err)
+        }
+      }
+
       if (Object.keys(patch).length === 0) continue
 
       if (patch.status === "finished") finished++
@@ -194,6 +292,7 @@ export async function POST(request: Request) {
       updated,
       finished,
       live,
+      detailsFetched,
       changes: changes.slice(0, 20),
     })
   } catch (err) {
