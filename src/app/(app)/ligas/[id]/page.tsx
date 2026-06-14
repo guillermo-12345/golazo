@@ -1,11 +1,10 @@
 import { createClient } from "@/lib/supabase/server"
 import { notFound } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Users, Trophy, Globe, Lock, Settings, Activity as ActivityIcon } from "lucide-react"
+import { ArrowLeft, Users, Trophy, Globe, Lock, Settings } from "lucide-react"
 import InviteCodeBox from "@/components/leagues/InviteCodeBox"
 import JoinLeagueButton from "@/components/leagues/JoinLeagueButton"
 import LeagueIcon from "@/components/LeagueIcon"
-import ActivityFeed from "@/components/leagues/ActivityFeed"
 import LeaderboardTable from "@/components/leagues/LeaderboardTable"
 import ShareButton from "@/components/ShareButton"
 import LeaveLeagueButton from "@/components/leagues/LeaveLeagueButton"
@@ -41,7 +40,7 @@ export default async function LigaDetailPage({ params }: { params: Promise<{ id:
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const [leagueRes, membersRes, myMembershipRes, activityRes] = await Promise.all([
+  const [leagueRes, membersRes, myMembershipRes] = await Promise.all([
     supabase.from("leagues").select("*").eq("id", id).single(),
     supabase
       .from("league_members")
@@ -54,12 +53,6 @@ export default async function LigaDetailPage({ params }: { params: Promise<{ id:
       .eq("league_id", id)
       .eq("user_id", user!.id)
       .maybeSingle(),
-    supabase
-      .from("league_activity")
-      .select("*")
-      .eq("league_id", id)
-      .order("created_at", { ascending: false })
-      .limit(20),
   ])
 
   if (!leagueRes.data) notFound()
@@ -67,13 +60,6 @@ export default async function LigaDetailPage({ params }: { params: Promise<{ id:
   const members = (membersRes.data ?? []) as unknown as Member[]
   const isMember = !!myMembershipRes.data
   const isCreator = league.created_by === user!.id
-  const activities = (activityRes.data ?? []) as unknown as Array<{
-    id: string
-    user_id: string | null
-    action_type: string
-    metadata: Record<string, unknown>
-    created_at: string
-  }>
 
   const shareText =
     league.type === "private" && league.invite_code
@@ -189,15 +175,6 @@ export default async function LigaDetailPage({ params }: { params: Promise<{ id:
           <LeagueChat leagueId={league.id} currentUserId={user!.id} />
         </section>
       )}
-
-      {/* Activity feed */}
-      <section className="mt-8">
-        <div className="flex items-center gap-2 mb-4">
-          <ActivityIcon size={18} className="text-blue-400" />
-          <h2 className="text-lg font-bold text-white">Actividad reciente</h2>
-        </div>
-        <ActivityFeed activities={activities} />
-      </section>
 
       {/* Salir de la liga — solo miembros no-creadores, no liga global */}
       {isMember && !isCreator && league.type !== "global" && (

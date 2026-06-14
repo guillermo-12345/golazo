@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { formatDistanceToNow } from "date-fns"
 import { es } from "date-fns/locale"
-import { Trophy, Flame, Target, Award } from "lucide-react"
+import { Trophy, Flame, Target, Award, History, ChevronRight } from "lucide-react"
 import Link from "next/link"
 import type { Profile, Match } from "@/types/database"
 import LeagueIcon from "@/components/LeagueIcon"
@@ -10,12 +10,14 @@ import DailyChallenge from "@/components/DailyChallenge"
 import WelcomeBanner from "@/components/WelcomeBanner"
 import { getLocale } from "@/lib/get-locale"
 
+const GLOBAL_LEAGUE_ID = "00000000-0000-0000-0000-000000000001"
+
 export default async function DashboardPage() {
   const supabase = await createClient()
   const locale = await getLocale()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const [profileRes, matchesRes, leaguesRes, predictionsRes, badgesRes] = await Promise.all([
+  const [profileRes, matchesRes, leaguesRes, predictionsRes, badgesRes, recentRes, globalCountRes] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user!.id).single(),
     supabase
       .from("matches")
@@ -28,18 +30,29 @@ export default async function DashboardPage() {
       .from("league_members")
       .select("league_id, points, rank, leagues(*)")
       .eq("user_id", user!.id)
-      .order("points", { ascending: false })
-      .limit(3),
+      .order("points", { ascending: false }),
     supabase
       .from("predictions")
-      .select("points_earned, match_id")
+      .select("points_earned, match_id, league_id")
       .eq("user_id", user!.id)
       .not("points_earned", "is", null),
     supabase.from("badges").select("badge_type").eq("user_id", user!.id),
+    supabase
+      .from("matches")
+      .select("*")
+      .eq("status", "finished")
+      .order("scheduled_at", { ascending: false })
+      .limit(5),
+    supabase
+      .from("league_members")
+      .select("user_id", { count: "exact", head: true })
+      .eq("league_id", GLOBAL_LEAGUE_ID),
   ])
 
   const profile = profileRes.data as Profile | null
   const upcomingMatches = (matchesRes.data ?? []) as Match[]
+  const recentResults = (recentRes.data ?? []) as Match[]
+  const globalMembersCount = globalCountRes.count ?? 0
   const myLeagues = (leaguesRes.data ?? []) as unknown as Array<{
     league_id: string
     points: number
@@ -54,11 +67,24 @@ export default async function DashboardPage() {
     } | null
   }>
 
+  // Posición en la Liga Global (la oficial donde están todos)
+  const globalMembership = myLeagues.find((m) => m.leagues?.type === "global")
+
   // Calcular stats personales
   const predictions = (predictionsRes.data ?? []) as Array<{
     points_earned: number | null
     match_id: string
+    league_id: string
   }>
+
+  // Mapa partido -> mis puntos (prioriza la Liga Global para consistencia con el hero)
+  const myPointsByMatch = new Map<string, number>()
+  for (const p of predictions) {
+    if (p.league_id === GLOBAL_LEAGUE_ID) myPointsByMatch.set(p.match_id, p.points_earned ?? 0)
+  }
+  for (const p of predictions) {
+    if (!myPointsByMatch.has(p.match_id)) myPointsByMatch.set(p.match_id, p.points_earned ?? 0)
+  }
   const totalPoints = myLeagues.reduce((sum, m) => sum + m.points, 0)
   const totalPredictions = predictions.length
   const successfulPredictions = predictions.filter((p) => (p.points_earned ?? 0) > 0).length
@@ -90,6 +116,36 @@ export default async function DashboardPage() {
 
       {/* Banner de bienvenida — se muestra una sola vez */}
       <WelcomeBanner displayName={profile?.display_name ?? ""} />
+
+      {/* Tu posición en la Liga Global — visible sin entrar a la liga */}
+      {globalMembership && (
+        <Link
+          href={`/ligas/${GLOBAL_LEAGUE_ID}`}
+          className="flex items-center gap-4 bg-gradient-to-r from-yellow-500/15 via-yellow-500/5 to-transparent border border-yellow-500/30 hover:border-yellow-500/50 rounded-2xl p-5 mb-6 transition-colors group"
+        >
+          <div className="w-12 h-12 rounded-xl bg-yellow-500/20 border border-yellow-500/40 flex items-center justify-center shrink-0">
+            <Trophy size={24} className="text-yellow-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold text-yellow-500/80 uppercase tracking-wider mb-0.5">
+              Tu posición · Liga Global
+            </p>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-black text-white">
+                {globalMembership.rank ? `#${globalMembership.rank}` : "—"}
+              </span>
+              {globalMembersCount > 0 && (
+                <span className="text-gray-500 text-sm">de {globalMembersCount}</span>
+              )}
+            </div>
+          </div>
+          <div className="text-right shrink-0">
+            <p className="text-2xl font-black text-yellow-400">{globalMembership.points}</p>
+            <p className="text-xs text-gray-500">puntos</p>
+          </div>
+          <ChevronRight size={20} className="text-gray-600 group-hover:translate-x-0.5 transition-transform shrink-0" />
+        </Link>
+      )}
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
         <div className="bg-white/5 border border-white/10 rounded-2xl p-4 text-center">
@@ -201,6 +257,73 @@ export default async function DashboardPage() {
           </div>
         )}
       </section>
+
+      {/* Últimos resultados — qué pasó y cómo me fue, sin ir al calendario */}
+      {recentResults.length > 0 && (
+        <section className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <History size={18} className="text-blue-400" />
+              <h2 className="text-lg font-bold text-white">Últimos resultados</h2>
+            </div>
+            <Link href="/calendario" className="text-green-500 hover:text-green-400 text-sm font-medium transition-colors">
+              Ver todos →
+            </Link>
+          </div>
+
+          <div className="space-y-3">
+            {recentResults.map((match) => {
+              const myPts = myPointsByMatch.get(match.id)
+              const played = myPts !== undefined
+              return (
+                <Link
+                  key={match.id}
+                  href={`/partidos/${match.id}`}
+                  className="flex items-center gap-3 bg-white/5 border border-white/10 hover:border-blue-500/30 rounded-2xl p-4 transition-colors"
+                >
+                  {/* Local */}
+                  <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
+                    <span className="text-xs text-gray-400 font-medium truncate text-right">
+                      {match.home_team}
+                    </span>
+                    <TeamFlag code={match.home_team_code} size={24} />
+                  </div>
+
+                  {/* Marcador */}
+                  <div className="shrink-0 px-2 py-1 rounded-lg bg-white/5 border border-white/10">
+                    <span className="text-white font-black tabular-nums text-sm">
+                      {match.home_score}-{match.away_score}
+                    </span>
+                  </div>
+
+                  {/* Visitante */}
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <TeamFlag code={match.away_team_code} size={24} />
+                    <span className="text-xs text-gray-400 font-medium truncate">
+                      {match.away_team}
+                    </span>
+                  </div>
+
+                  {/* Cómo me fue */}
+                  <div className="shrink-0 w-14 text-right">
+                    {played ? (
+                      <span
+                        className={`text-xs font-bold ${
+                          myPts > 0 ? "text-green-400" : "text-gray-600"
+                        }`}
+                      >
+                        {myPts > 0 ? `+${myPts}` : "0 pts"}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-700">No jugaste</span>
+                    )}
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+        </section>
+      )}
 
       <section>
         <div className="flex items-center justify-between mb-4">
