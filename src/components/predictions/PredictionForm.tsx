@@ -67,6 +67,17 @@ const CORNER_RANGES = ["0-5", "6-10", "11-15", "16-20"]
 const SHOT_RANGES = ["0-10", "11-20", "21-30", "31-50"]
 const FOUL_RANGES = ["0-15", "16-25", "26-35", "36-50"]
 
+// ¿La liga tiene predicciones avanzadas activas (master + al menos un campo)?
+function leagueHasAdvanced(l: LeagueForPrediction): boolean {
+  const a = l.config.advancedOptions
+  return !!(
+    a?.enabled &&
+    (a.firstScorer || a.firstTeamToScore || a.goalMinute || a.halftimeResult ||
+      a.yellowCards || a.redCards || a.corners || a.possession ||
+      a.totalShots || a.totalFouls)
+  )
+}
+
 export default function PredictionForm({
   match,
   leagues,
@@ -79,7 +90,11 @@ export default function PredictionForm({
   isLocked: boolean
 }) {
   const router = useRouter()
-  const [selectedLeagueId, setSelectedLeagueId] = useState(leagues[0].id)
+  // Por defecto seleccionamos una liga CON avanzadas (si la hay), así no quedan
+  // ocultas cuando el usuario también está en la Liga Global (que no las tiene).
+  const [selectedLeagueId, setSelectedLeagueId] = useState(
+    (leagues.find(leagueHasAdvanced) ?? leagues[0]).id
+  )
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [savedCount, setSavedCount] = useState(1)
@@ -96,11 +111,9 @@ export default function PredictionForm({
   const selectedLeague = leagues.find((l) => l.id === selectedLeagueId)!
   const adv = selectedLeague.config.advancedOptions
   const mult = selectedLeague.config.multipliers ?? BASIC_POINTS
-  const hasAnyAdvanced =
-    adv?.enabled &&
-    (adv.firstScorer || adv.firstTeamToScore || adv.goalMinute || adv.halftimeResult ||
-      adv.yellowCards || adv.redCards || adv.corners || adv.possession ||
-      adv.totalShots || adv.totalFouls)
+  const hasAnyAdvanced = leagueHasAdvanced(selectedLeague)
+  // La liga actual no tiene avanzadas, pero otra liga del usuario sí → sugerir cambio
+  const otherLeagueHasAdvanced = !hasAnyAdvanced && leagues.some(leagueHasAdvanced)
 
   // Filtra los picks avanzados según las opciones habilitadas en cada liga
   // (al guardar en todas, una liga sin córners no debe recibir ese pick).
@@ -310,6 +323,17 @@ export default function PredictionForm({
               color="#a855f7"
             />
           </div>
+        </div>
+      )}
+
+      {/* Aviso: hay avanzadas en otra liga */}
+      {otherLeagueHasAdvanced && (
+        <div className="flex items-center gap-2 bg-yellow-500/5 border border-yellow-500/20 rounded-xl px-4 py-3">
+          <Sparkles size={14} className="text-yellow-400 shrink-0" />
+          <p className="text-xs text-gray-400">
+            <span className="text-gray-200 font-medium">{selectedLeague.name}</span> no tiene
+            predicciones avanzadas. Cambiá de liga arriba (en “Predecir para”) para usarlas.
+          </p>
         </div>
       )}
 

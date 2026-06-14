@@ -28,8 +28,9 @@ export default async function PartidoDetailPage({
     supabase.from("matches").select("*").eq("id", id).single(),
     supabase
       .from("league_members")
-      .select("league_id, leagues(*)")
-      .eq("user_id", user!.id),
+      .select("league_id, joined_at, leagues(*)")
+      .eq("user_id", user!.id)
+      .order("joined_at", { ascending: true }),
   ])
 
   if (!matchRes.data) notFound()
