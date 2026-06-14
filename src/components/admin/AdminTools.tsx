@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { RefreshCw, Loader2, Check, Pencil, Search, Users } from "lucide-react"
+import { RefreshCw, Loader2, Check, Pencil, Search, Users, Calculator } from "lucide-react"
 
 export default function AdminTools() {
   const [syncing, setSyncing] = useState<string | null>(null)
@@ -11,6 +11,10 @@ export default function AdminTools() {
   // Sync de planteles (jugadores)
   const [syncingPlayers, setSyncingPlayers] = useState(false)
   const [playersResult, setPlayersResult] = useState<string | null>(null)
+
+  // Recálculo de puntos
+  const [recalculating, setRecalculating] = useState(false)
+  const [recalcResult, setRecalcResult] = useState<string | null>(null)
 
   // Cargar resultado manual
   const [query, setQuery] = useState("")
@@ -46,6 +50,19 @@ export default function AdminTools() {
       setPlayersResult("Error al sincronizar planteles")
     }
     setSyncingPlayers(false)
+  }
+
+  async function recalculate() {
+    setRecalculating(true)
+    setRecalcResult(null)
+    try {
+      const res = await fetch(`/api/admin/recalculate`, { method: "POST" })
+      const data = await res.json()
+      setRecalcResult(JSON.stringify(data))
+    } catch {
+      setRecalcResult("Error al recalcular")
+    }
+    setRecalculating(false)
   }
 
   async function searchMatches() {
@@ -164,6 +181,36 @@ export default function AdminTools() {
           {playersResult && (
             <pre className="mt-3 bg-black/40 border border-white/10 rounded-lg p-3 text-xs text-blue-300 overflow-x-auto">
               {playersResult}
+            </pre>
+          )}
+        </div>
+      </section>
+
+      {/* Recálculo de puntos */}
+      <section>
+        <div className="flex items-center gap-2 mb-3">
+          <Calculator size={18} className="text-purple-400" />
+          <h2 className="text-lg font-bold text-white">Recalcular puntos</h2>
+        </div>
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+          <p className="text-gray-500 text-xs mb-3">
+            Recalcula los puntos de <span className="text-purple-300 font-bold">todos los partidos terminados</span>{" "}
+            desde cero (básicos + avanzados), con las reglas actuales y el
+            extra_data ya cargado. Es seguro: no duplica notificaciones ni
+            puntos. Útil tras cambiar reglas o cuando las estadísticas
+            llegaron después del primer cálculo.
+          </p>
+          <button
+            onClick={recalculate}
+            disabled={recalculating}
+            className="flex items-center gap-2 bg-purple-500 hover:bg-purple-400 disabled:opacity-50 text-black font-bold px-4 py-2.5 rounded-xl text-sm transition-colors"
+          >
+            {recalculating ? <Loader2 size={14} className="animate-spin" /> : <Calculator size={14} />}
+            Recalcular todos los puntos
+          </button>
+          {recalcResult && (
+            <pre className="mt-3 bg-black/40 border border-white/10 rounded-lg p-3 text-xs text-purple-300 overflow-x-auto">
+              {recalcResult}
             </pre>
           )}
         </div>
