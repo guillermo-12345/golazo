@@ -7,6 +7,7 @@ import {
   type EspnMatchDetails,
   type EspnTeamStats,
 } from "@/lib/espn/client"
+import { computeBracketUpdates, type BracketMatch } from "@/lib/bracket-resolve"
 
 /**
  * Sincronización de calendario y marcadores desde la API pública de ESPN.
@@ -217,13 +218,13 @@ export async function POST(request: Request) {
       }
     }
 
-    // 2. Partidos de grupos en la DB (los TBD de playoffs no matchean nunca)
+    // 2. Todos los partidos: grupos + eliminatorias ya con equipos reales.
+    //    Los slots TBD (knockout sin definir) se saltean al matchear.
     const { data: matchesData, error: mErr } = await supabase
       .from("matches")
       .select(
         "id, home_team, away_team, home_team_code, away_team_code, scheduled_at, venue, status, home_score, away_score, minute, extra_data"
       )
-      .eq("stage", "group_stage")
     if (mErr) throw mErr
 
     const matches = (matchesData ?? []) as DbMatch[]
@@ -236,6 +237,8 @@ export async function POST(request: Request) {
     const changes: Array<{ match: string; fields: string[] }> = []
 
     for (const m of matches) {
+      // Slots de knockout sin definir: no se pueden matchear
+      if (m.home_team_code === "TBD" || m.away_team_code === "TBD") continue
       const ev = events.get(pairKey(m.home_team_code, m.away_team_code))
       if (!ev) continue
 
@@ -272,6 +275,34 @@ export async function POST(request: Request) {
       changes.push({ match: `${m.home_team} vs ${m.away_team}`, fields: Object.keys(patch) })
     }
 
+    // 4. Auto-armado del cuadro: completa slots de knockout (ganadores/2dos de
+    //    grupo, ganadores/perdedores de rondas previas) a medida que se definen.
+    let bracketFilled = 0
+    const bracketChanges: string[] = []
+    if (!dry) {
+      const { data: allData, error: bErr } = await supabase
+        .from("matches")
+        .select(
+          "api_fixture_id, stage, status, group_name, home_team, away_team, home_team_code, away_team_code, home_score, away_score, extra_data"
+        )
+      if (bErr) throw bErr
+      const bracketUpdates = computeBracketUpdates((allData ?? []) as BracketMatch[])
+      for (const u of bracketUpdates) {
+        const { error } = await supabase
+          .from("matches")
+          .update({
+            home_team: u.home_team,
+            home_team_code: u.home_team_code,
+            away_team: u.away_team,
+            away_team_code: u.away_team_code,
+          })
+          .eq("api_fixture_id", u.api_fixture_id)
+        if (error) throw error
+        bracketFilled++
+        bracketChanges.push(`${u.home_team} vs ${u.away_team}`)
+      }
+    }
+
     if (logId) {
       await supabase
         .from("sync_log")
@@ -293,6 +324,8 @@ export async function POST(request: Request) {
       finished,
       live,
       detailsFetched,
+      bracketFilled,
+      bracketChanges: bracketChanges.slice(0, 12),
       changes: changes.slice(0, 20),
     })
   } catch (err) {
