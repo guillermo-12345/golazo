@@ -209,8 +209,7 @@ export default function PredictionForm({
         <Lock size={24} className="text-gray-500 mx-auto mb-3" />
         <p className="text-gray-300 font-medium">Las predicciones están cerradas</p>
         <p className="text-gray-500 text-sm mt-1">
-          Cierran {PREDICTION_LOCK_MINUTES} minutos antes del inicio, cuando se
-          conocen las alineaciones
+          Cierran {PREDICTION_LOCK_MINUTES} minutos antes del inicio del partido
         </p>
       </div>
     )

@@ -1,12 +1,12 @@
 /**
  * Regla de cierre de predicciones.
  *
- * Las predicciones cierran un rato ANTES del kickoff para evitar trampas:
- * ~60-75 min antes se publican las alineaciones oficiales, y conocerlas
- * da ventaja injusta. El corte vive también en la base de datos (RLS,
- * migración 010) — si cambiás este valor, cambialo en ambos lados.
+ * Las predicciones cierran 5 minutos ANTES del kickoff: se puede predecir
+ * hasta casi el inicio, pero no con el partido ya empezado. El corte vive
+ * también en la base de datos (RLS, migración 015) — si cambiás este valor,
+ * actualizá también prediction_window_open en una migración nueva.
  */
-export const PREDICTION_LOCK_MINUTES = 65
+export const PREDICTION_LOCK_MINUTES = 5
 
 /** Momento exacto en que cierran las predicciones de un partido. */
 export function predictionLockTime(scheduledAt: string | Date): Date {
