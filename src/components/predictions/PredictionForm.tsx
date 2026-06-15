@@ -78,15 +78,19 @@ function leagueHasAdvanced(l: LeagueForPrediction): boolean {
   )
 }
 
+const MAX_WILDCARDS_PER_LEAGUE = 2
+
 export default function PredictionForm({
   match,
   leagues,
   existingPreds,
+  otherWildcardsByLeague = {},
   isLocked,
 }: {
   match: Match
   leagues: LeagueForPrediction[]
   existingPreds: ExistingPred[]
+  otherWildcardsByLeague?: Record<string, number>
   isLocked: boolean
 }) {
   const router = useRouter()
@@ -114,6 +118,20 @@ export default function PredictionForm({
   const hasAnyAdvanced = leagueHasAdvanced(selectedLeague)
   // La liga actual no tiene avanzadas, pero otra liga del usuario sí → sugerir cambio
   const otherLeagueHasAdvanced = !hasAnyAdvanced && leagues.some(leagueHasAdvanced)
+
+  // Límite de comodines por liga (2). Los usados en otros partidos + este.
+  const wildcardsUsedOther = otherWildcardsByLeague[selectedLeagueId] ?? 0
+  const wildcardsRemaining = Math.max(0, MAX_WILDCARDS_PER_LEAGUE - wildcardsUsedOther - (wildcard ? 1 : 0))
+  // Si ya gastó los 2 en otros partidos, no puede poner uno nuevo acá
+  const wildcardLimitReached = wildcardsUsedOther >= MAX_WILDCARDS_PER_LEAGUE && !wildcard
+
+  function toggleWildcard(type: string) {
+    if (wildcard === type) {
+      setWildcard(null)
+    } else if (!wildcardLimitReached) {
+      setWildcard(type)
+    }
+  }
 
   // Filtra los picks avanzados según las opciones habilitadas en cada liga
   // (al guardar en todas, una liga sin córners no debe recibir ese pick).
@@ -299,29 +317,37 @@ export default function PredictionForm({
           <div className="flex items-center gap-2 mb-3">
             <Sparkles size={14} className="text-yellow-400" />
             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Comodín</p>
-            <span className="text-xs text-gray-600">(opcional)</span>
+            <span className="ml-auto text-xs text-gray-500">
+              Te quedan <span className="text-yellow-400 font-bold">{wildcardsRemaining}</span> de {MAX_WILDCARDS_PER_LEAGUE}
+            </span>
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
-            <WildcardButton
-              label="Todo o Nada" description="x2 si acertás · -2 si fallás"
-              active={wildcard === "todo_o_nada"}
-              onClick={() => setWildcard(wildcard === "todo_o_nada" ? null : "todo_o_nada")}
-              color="#ef4444"
-            />
-            <WildcardButton
-              label="Escudo" description="Protege puntos avanzados"
-              active={wildcard === "escudo"}
-              onClick={() => setWildcard(wildcard === "escudo" ? null : "escudo")}
-              color="#3b82f6"
-            />
-            <WildcardButton
-              label="Ladrón" description="Robá 2 pts al líder"
-              active={wildcard === "ladron"}
-              onClick={() => setWildcard(wildcard === "ladron" ? null : "ladron")}
-              color="#a855f7"
-            />
-          </div>
+          {wildcardLimitReached ? (
+            <p className="text-xs text-gray-500 bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-center">
+              Ya usaste tus {MAX_WILDCARDS_PER_LEAGUE} comodines en esta liga.
+            </p>
+          ) : (
+            <div className="grid grid-cols-3 gap-2">
+              <WildcardButton
+                label="Todo o Nada" description="x2 si acertás · -2 si fallás"
+                active={wildcard === "todo_o_nada"}
+                onClick={() => toggleWildcard("todo_o_nada")}
+                color="#ef4444"
+              />
+              <WildcardButton
+                label="Escudo" description="Si sos líder, te blinda del Ladrón"
+                active={wildcard === "escudo"}
+                onClick={() => toggleWildcard("escudo")}
+                color="#3b82f6"
+              />
+              <WildcardButton
+                label="Ladrón" description="Robá 2 pts al líder"
+                active={wildcard === "ladron"}
+                onClick={() => toggleWildcard("ladron")}
+                color="#a855f7"
+              />
+            </div>
+          )}
         </div>
       )}
 

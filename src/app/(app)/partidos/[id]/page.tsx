@@ -79,6 +79,19 @@ export default async function PartidoDetailPage({
     wildcard_used: string | null
   }>
 
+  // Comodines ya usados por el usuario en OTROS partidos, por liga (límite: 2)
+  const { data: otherWcData } = await supabase
+    .from("predictions")
+    .select("league_id, match_id, wildcard_used")
+    .eq("user_id", user!.id)
+    .not("wildcard_used", "is", null)
+    .neq("match_id", id)
+
+  const otherWildcardsByLeague: Record<string, number> = {}
+  for (const row of (otherWcData ?? []) as Array<{ league_id: string }>) {
+    otherWildcardsByLeague[row.league_id] = (otherWildcardsByLeague[row.league_id] ?? 0) + 1
+  }
+
   // Cierra PREDICTION_LOCK_MINUTES antes del kickoff (también validado por RLS)
   const isLocked = isPredictionLocked(match.scheduled_at, match.status)
 
@@ -138,6 +151,7 @@ export default async function PartidoDetailPage({
           match={match}
           leagues={validLeagues}
           existingPreds={existingPreds}
+          otherWildcardsByLeague={otherWildcardsByLeague}
           isLocked={isLocked}
         />
       )}

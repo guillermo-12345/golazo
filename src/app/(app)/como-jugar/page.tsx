@@ -105,11 +105,11 @@ export default async function ComoJugarPage() {
       </Section>
 
       {/* Comodines */}
-      <Section icon={Sparkles} title="Comodines (3 por torneo)" color="text-yellow-400">
+      <Section icon={Sparkles} title="Comodines (2 por liga)" color="text-yellow-400">
         <p className="text-gray-400 text-sm mb-4">
           {isAR
-            ? "Cada usuario tiene 3 comodines por torneo. Los usás cuando querés en cualquier partido, pero solo uno por partido."
-            : "Cada usuario tiene 3 comodines por torneo. Los usas cuando quieras en cualquier partido, pero solo uno por partido."}
+            ? "Cada usuario tiene 2 comodines por liga. Los usás cuando querés en cualquier partido, pero solo uno por partido."
+            : "Cada usuario tiene 2 comodines por liga. Los usas cuando quieras en cualquier partido, pero solo uno por partido."}
         </p>
         <div className="space-y-3">
           <Wildcard
@@ -128,8 +128,8 @@ export default async function ComoJugarPage() {
             bg="bg-blue-500/10 border-blue-500/30"
             desc={
               isAR
-                ? "Protege los puntos apostados en opciones avanzadas. Si fallás, no perdés nada."
-                : "Protege los puntos apostados en opciones avanzadas. Si fallas, no pierdes nada."
+                ? "Si sos el líder de la liga, te blinda: ningún Ladrón puede robarte puntos en ese partido."
+                : "Si eres el líder de la liga, te blinda: ningún Ladrón puede robarte puntos en ese partido."
             }
           />
           <Wildcard
@@ -138,8 +138,8 @@ export default async function ComoJugarPage() {
             bg="bg-purple-500/10 border-purple-500/30"
             desc={
               isAR
-                ? "Si acertás el partido y el líder de tu liga falla, le robás 2 puntos."
-                : "Si aciertas el partido y el líder de tu liga falla, le robas 2 puntos."
+                ? "Si acertás el partido, le robás 2 puntos al líder de la liga (salvo que use Escudo)."
+                : "Si aciertas el partido, le robas 2 puntos al líder de la liga (salvo que use Escudo)."
             }
           />
         </div>
