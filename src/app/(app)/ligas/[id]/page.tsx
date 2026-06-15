@@ -20,7 +20,10 @@ type League = {
   banner_color: string
   is_verified: boolean
   created_by: string | null
-  config: { icon?: { style: string; seed: string } } | null
+  config: {
+    icon?: { style: string; seed: string }
+    multipliers?: { exactScore: number; correctWinner: number; correctDraw: number; winnerWithDiff: number }
+  } | null
 }
 
 type Member = {
@@ -162,6 +165,7 @@ export default async function LigaDetailPage({ params }: { params: Promise<{ id:
           leagueId={league.id}
           initialMembers={members}
           currentUserId={user!.id}
+          multipliers={league.config?.multipliers}
         />
       </section>
 

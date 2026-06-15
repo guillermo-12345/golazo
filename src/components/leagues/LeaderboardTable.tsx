@@ -6,6 +6,7 @@ import Avatar from "@/components/Avatar"
 import TeamFlag from "@/components/TeamFlag"
 import { Crown, TrendingUp, TrendingDown, ChevronDown, Loader2 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
+import { BASIC_POINTS } from "@/lib/scoring-values"
 
 type Member = {
   user_id: string
@@ -19,10 +20,18 @@ type Member = {
   } | null
 }
 
+type Multipliers = {
+  exactScore: number
+  correctWinner: number
+  correctDraw: number
+  winnerWithDiff: number
+}
+
 type HistoryRow = {
   home_score_pred: number
   away_score_pred: number
   points_earned: number | null
+  wildcard_used: string | null
   matches: {
     home_team_code: string
     away_team_code: string
@@ -36,9 +45,28 @@ type Props = {
   leagueId: string
   initialMembers: Member[]
   currentUserId: string
+  multipliers?: Multipliers
 }
 
-export default function LeaderboardTable({ leagueId, initialMembers, currentUserId }: Props) {
+/** Puntos básicos por el resultado (espeja calculate_prediction_points en SQL). */
+function basicPoints(
+  hp: number,
+  ap: number,
+  hr: number,
+  ar: number,
+  mult: Multipliers,
+  wildcard: string | null
+): number {
+  let p = 0
+  if (hp === hr && ap === ar) p = mult.exactScore
+  else if (hp - ap === hr - ar && hr !== ar) p = mult.winnerWithDiff
+  else if (hp === ap && hr === ar) p = mult.correctDraw
+  else if ((hp > ap && hr > ar) || (hp < ap && hr < ar)) p = mult.correctWinner
+  if (wildcard === "todo_o_nada") p = p > 0 ? p * 2 : -2
+  return p
+}
+
+export default function LeaderboardTable({ leagueId, initialMembers, currentUserId, multipliers }: Props) {
   const [members, setMembers] = useState<Member[]>(initialMembers)
   const [previousRanks, setPreviousRanks] = useState<Map<string, number | null>>(
     new Map(initialMembers.map((m) => [m.user_id, m.rank]))
@@ -106,7 +134,7 @@ export default function LeaderboardTable({ leagueId, initialMembers, currentUser
       const { data } = await supabase
         .from("predictions")
         .select(
-          "home_score_pred, away_score_pred, points_earned, matches!inner(home_team_code, away_team_code, home_score, away_score, scheduled_at, status)"
+          "home_score_pred, away_score_pred, points_earned, wildcard_used, matches!inner(home_team_code, away_team_code, home_score, away_score, scheduled_at, status)"
         )
         .eq("league_id", leagueId)
         .eq("user_id", userId)
@@ -223,7 +251,11 @@ export default function LeaderboardTable({ leagueId, initialMembers, currentUser
                           Todavía no tiene partidos puntuados en esta liga
                         </p>
                       ) : (
-                        <PlayerHistory rows={rows} totalPoints={member.points} />
+                        <PlayerHistory
+                          rows={rows}
+                          totalPoints={member.points}
+                          multipliers={multipliers ?? BASIC_POINTS}
+                        />
                       )}
                     </div>
                   </motion.div>
@@ -237,7 +269,15 @@ export default function LeaderboardTable({ leagueId, initialMembers, currentUser
   )
 }
 
-function PlayerHistory({ rows, totalPoints }: { rows: HistoryRow[]; totalPoints: number }) {
+function PlayerHistory({
+  rows,
+  totalPoints,
+  multipliers,
+}: {
+  rows: HistoryRow[]
+  totalPoints: number
+  multipliers: Multipliers
+}) {
   const scored = rows.filter((r) => (r.points_earned ?? 0) > 0).length
   const exact = rows.filter(
     (r) =>
@@ -264,6 +304,12 @@ function PlayerHistory({ rows, totalPoints }: { rows: HistoryRow[]; totalPoints:
           const pts = r.points_earned ?? 0
           const isExact =
             r.home_score_pred === m.home_score && r.away_score_pred === m.away_score
+          // Cuánto vino del resultado vs de las apuestas avanzadas
+          const base =
+            m.home_score !== null && m.away_score !== null
+              ? basicPoints(r.home_score_pred, r.away_score_pred, m.home_score, m.away_score, multipliers, r.wildcard_used)
+              : 0
+          const advanced = pts - base
           return (
             <div
               key={i}
@@ -276,9 +322,16 @@ function PlayerHistory({ rows, totalPoints }: { rows: HistoryRow[]; totalPoints:
                 </span>
                 <TeamFlag code={m.away_team_code} size={16} />
               </div>
-              <span className="text-gray-600">
-                predijo <span className="text-gray-400 tabular-nums">{r.home_score_pred}-{r.away_score_pred}</span>
-              </span>
+              <div className="flex flex-col items-end shrink-0">
+                <span className="text-gray-600 leading-tight">
+                  predijo <span className="text-gray-400 tabular-nums">{r.home_score_pred}-{r.away_score_pred}</span>
+                </span>
+                {advanced > 0 && (
+                  <span className="text-[10px] text-gray-600 leading-tight">
+                    resultado +{base} · <span className="text-yellow-500/80">avanzadas +{advanced}</span>
+                  </span>
+                )}
+              </div>
               <span
                 className={`font-bold tabular-nums w-9 text-right ${
                   isExact ? "text-yellow-400" : pts > 0 ? "text-green-400" : "text-gray-600"
@@ -299,7 +352,7 @@ function PlayerHistory({ rows, totalPoints }: { rows: HistoryRow[]; totalPoints:
         </div>
         {bonus !== 0 && (
           <div className="flex items-center justify-between text-xs px-1">
-            <span className="text-gray-500">Bonus desafío diario</span>
+            <span className="text-gray-500">Bonus (desafío + comodines)</span>
             <span className="text-purple-300 font-medium tabular-nums">
               {bonus > 0 ? `+${bonus}` : bonus}
             </span>
