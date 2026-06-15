@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { formatDistanceToNow } from "date-fns"
 import { es } from "date-fns/locale"
-import { Trophy, Flame, Target, Award, History, ChevronRight } from "lucide-react"
+import { Trophy, Flame, Target, Award, History, ChevronRight, Check, Zap } from "lucide-react"
 import Link from "next/link"
 import type { Profile, Match } from "@/types/database"
 import LeagueIcon from "@/components/LeagueIcon"
@@ -9,6 +9,7 @@ import TeamFlag from "@/components/TeamFlag"
 import DailyChallenge from "@/components/DailyChallenge"
 import WelcomeBanner from "@/components/WelcomeBanner"
 import { getLocale } from "@/lib/get-locale"
+import { PREDICTION_LOCK_MINUTES } from "@/lib/predictions"
 
 const GLOBAL_LEAGUE_ID = "00000000-0000-0000-0000-000000000001"
 
@@ -17,7 +18,11 @@ export default async function DashboardPage() {
   const locale = await getLocale()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const [profileRes, matchesRes, leaguesRes, predictionsRes, badgesRes, recentRes, globalCountRes] = await Promise.all([
+  // Cierre de predicciones: solo cuentan como "por predecir" los partidos
+  // que todavía están abiertos (faltan más de PREDICTION_LOCK_MINUTES).
+  const lockThreshold = new Date(Date.now() + PREDICTION_LOCK_MINUTES * 60 * 1000).toISOString()
+
+  const [profileRes, matchesRes, leaguesRes, predictionsRes, badgesRes, recentRes, globalCountRes, openRes, allPredsRes] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user!.id).single(),
     supabase
       .from("matches")
@@ -47,12 +52,37 @@ export default async function DashboardPage() {
       .from("league_members")
       .select("user_id", { count: "exact", head: true })
       .eq("league_id", GLOBAL_LEAGUE_ID),
+    // Partidos aún abiertos para predecir (con margen del cierre)
+    supabase
+      .from("matches")
+      .select("id, home_team, away_team, home_team_code, away_team_code, scheduled_at")
+      .eq("status", "scheduled")
+      .gt("scheduled_at", lockThreshold)
+      .order("scheduled_at", { ascending: true }),
+    // Todos los partidos que el usuario ya predijo (en cualquier liga)
+    supabase.from("predictions").select("match_id").eq("user_id", user!.id),
   ])
 
   const profile = profileRes.data as Profile | null
   const upcomingMatches = (matchesRes.data ?? []) as Match[]
   const recentResults = (recentRes.data ?? []) as Match[]
   const globalMembersCount = globalCountRes.count ?? 0
+
+  // Set de partidos ya predichos + pendientes por predecir
+  const predictedSet = new Set(
+    ((allPredsRes.data ?? []) as Array<{ match_id: string }>).map((p) => p.match_id)
+  )
+  const openMatches = (openRes.data ?? []) as Array<{
+    id: string
+    home_team: string
+    away_team: string
+    home_team_code: string
+    away_team_code: string
+    scheduled_at: string
+  }>
+  const pendingMatches = openMatches.filter((m) => !predictedSet.has(m.id))
+  const pendingCount = pendingMatches.length
+  const nextToPredict = pendingMatches[0] ?? null
   const myLeagues = (leaguesRes.data ?? []) as unknown as Array<{
     league_id: string
     points: number
@@ -116,6 +146,42 @@ export default async function DashboardPage() {
 
       {/* Banner de bienvenida — se muestra una sola vez */}
       <WelcomeBanner displayName={profile?.display_name ?? ""} />
+
+      {/* CTA Predecir — acción principal, lo primero que se ve */}
+      {nextToPredict ? (
+        <Link
+          href={`/partidos/${nextToPredict.id}`}
+          className="flex items-center gap-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500 rounded-2xl p-5 mb-6 transition-colors group shadow-lg shadow-green-500/20"
+        >
+          <div className="w-12 h-12 rounded-xl bg-black/20 flex items-center justify-center shrink-0">
+            <Zap size={24} className="text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-black font-black text-base">
+              {pendingCount === 1
+                ? "Te falta 1 partido por predecir"
+                : `Te faltan ${pendingCount} partidos por predecir`}
+            </p>
+            <p className="text-black/70 text-sm font-medium truncate">
+              Próximo: {nextToPredict.home_team} vs {nextToPredict.away_team}
+            </p>
+          </div>
+          <span className="shrink-0 bg-black/20 text-black font-black text-sm px-4 py-2 rounded-xl group-hover:translate-x-0.5 transition-transform">
+            Predecir →
+          </span>
+        </Link>
+      ) : (
+        <Link
+          href="/partidos"
+          className="flex items-center gap-3 bg-green-500/10 border border-green-500/30 rounded-2xl p-4 mb-6 transition-colors hover:border-green-500/50"
+        >
+          <Check size={20} className="text-green-400 shrink-0" />
+          <p className="text-green-300 font-bold text-sm flex-1">
+            ¡Estás al día! Ya predijiste todos los partidos abiertos.
+          </p>
+          <ChevronRight size={18} className="text-green-400/60 shrink-0" />
+        </Link>
+      )}
 
       {/* Tu posición en la Liga Global — visible sin entrar a la liga */}
       {globalMembership && (
@@ -245,12 +311,22 @@ export default async function DashboardPage() {
                     </span>
                   </div>
 
-                  <Link
-                    href={`/partidos/${match.id}`}
-                    className="shrink-0 ml-1 sm:ml-2 bg-green-500/10 hover:bg-green-500/20 text-green-400 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors"
-                  >
-                    Predecir
-                  </Link>
+                  {predictedSet.has(match.id) ? (
+                    <Link
+                      href={`/partidos/${match.id}`}
+                      className="shrink-0 ml-1 sm:ml-2 flex items-center gap-1 bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                      <Check size={12} className="text-green-400" />
+                      Predicho
+                    </Link>
+                  ) : (
+                    <Link
+                      href={`/partidos/${match.id}`}
+                      className="shrink-0 ml-1 sm:ml-2 bg-green-500/10 hover:bg-green-500/20 text-green-400 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                      Predecir
+                    </Link>
+                  )}
                 </div>
               </div>
             ))}

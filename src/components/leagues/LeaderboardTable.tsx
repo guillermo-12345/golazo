@@ -223,7 +223,7 @@ export default function LeaderboardTable({ leagueId, initialMembers, currentUser
                           Todavía no tiene partidos puntuados en esta liga
                         </p>
                       ) : (
-                        <PlayerHistory rows={rows} />
+                        <PlayerHistory rows={rows} totalPoints={member.points} />
                       )}
                     </div>
                   </motion.div>
@@ -237,7 +237,7 @@ export default function LeaderboardTable({ leagueId, initialMembers, currentUser
   )
 }
 
-function PlayerHistory({ rows }: { rows: HistoryRow[] }) {
+function PlayerHistory({ rows, totalPoints }: { rows: HistoryRow[]; totalPoints: number }) {
   const scored = rows.filter((r) => (r.points_earned ?? 0) > 0).length
   const exact = rows.filter(
     (r) =>
@@ -245,6 +245,10 @@ function PlayerHistory({ rows }: { rows: HistoryRow[] }) {
       r.home_score_pred === r.matches.home_score &&
       r.away_score_pred === r.matches.away_score
   ).length
+  // Suma de puntos por predicciones. La diferencia con el total son los
+  // bonus del desafío diario (que se suman aparte de los partidos).
+  const predsPoints = rows.reduce((sum, r) => sum + (r.points_earned ?? 0), 0)
+  const bonus = totalPoints - predsPoints
 
   return (
     <div>
@@ -285,6 +289,26 @@ function PlayerHistory({ rows }: { rows: HistoryRow[] }) {
             </div>
           )
         })}
+      </div>
+
+      {/* Reconciliación: partidos + bonus diario = total */}
+      <div className="mt-2 pt-2 border-t border-white/10 space-y-1">
+        <div className="flex items-center justify-between text-xs px-1">
+          <span className="text-gray-500">Puntos por partidos</span>
+          <span className="text-gray-300 font-medium tabular-nums">{predsPoints}</span>
+        </div>
+        {bonus !== 0 && (
+          <div className="flex items-center justify-between text-xs px-1">
+            <span className="text-gray-500">Bonus desafío diario</span>
+            <span className="text-purple-300 font-medium tabular-nums">
+              {bonus > 0 ? `+${bonus}` : bonus}
+            </span>
+          </div>
+        )}
+        <div className="flex items-center justify-between text-sm px-1 pt-0.5">
+          <span className="text-white font-bold">Total</span>
+          <span className="text-white font-black tabular-nums">{totalPoints}</span>
+        </div>
       </div>
     </div>
   )
