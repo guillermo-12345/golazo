@@ -41,12 +41,12 @@ export const ADVANCED_POINTS = {
   possession: 1,
 } as const
 
-/** Desafío diario por niveles (SQL: migración 012 — mantener en sync). */
+/** Desafío diario por niveles (SQL: migración 017 — mantener en sync). */
 export const DAILY_CHALLENGE_POINTS = {
   /** Predecir todos los partidos del día */
-  participate: 5,
+  participate: 1,
   /** Acertar el 1X2 en al menos la mitad de los partidos del día */
-  accuracy: 10,
+  accuracy: 2,
   /** Clavar al menos un resultado exacto en el día */
-  sniper: 15,
+  sniper: 3,
 } as const

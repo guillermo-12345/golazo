@@ -13,7 +13,7 @@ import LiveScore from "@/components/matches/LiveScore"
 import LiveMatchScoreboard from "@/components/matches/LiveMatchScoreboard"
 import MatchEvents from "@/components/matches/MatchEvents"
 import MatchStatistics from "@/components/matches/MatchStatistics"
-import { isPredictionLocked } from "@/lib/predictions"
+import { isPredictionLocked, PREDICTION_LOCK_MINUTES } from "@/lib/predictions"
 
 export default async function PartidoDetailPage({
   params,
@@ -92,6 +92,20 @@ export default async function PartidoDetailPage({
     otherWildcardsByLeague[row.league_id] = (otherWildcardsByLeague[row.league_id] ?? 0) + 1
   }
 
+  // Siguiente partido aún abierto (para el botón "predecir el siguiente")
+  const lockThreshold = new Date(Date.now() + PREDICTION_LOCK_MINUTES * 60 * 1000).toISOString()
+  const { data: nextMatchData } = await supabase
+    .from("matches")
+    .select("id")
+    .eq("status", "scheduled")
+    .gt("scheduled_at", match.scheduled_at)
+    .gt("scheduled_at", lockThreshold)
+    .neq("id", id)
+    .order("scheduled_at", { ascending: true })
+    .limit(1)
+    .maybeSingle()
+  const nextMatchId = (nextMatchData as { id: string } | null)?.id ?? null
+
   // Cierra PREDICTION_LOCK_MINUTES antes del kickoff (también validado por RLS)
   const isLocked = isPredictionLocked(match.scheduled_at, match.status)
 
@@ -152,6 +166,7 @@ export default async function PartidoDetailPage({
           leagues={validLeagues}
           existingPreds={existingPreds}
           otherWildcardsByLeague={otherWildcardsByLeague}
+          nextMatchId={nextMatchId}
           isLocked={isLocked}
         />
       )}

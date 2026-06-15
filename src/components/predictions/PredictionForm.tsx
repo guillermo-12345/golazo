@@ -2,8 +2,9 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
-import { Loader2, Lock, Check, Sparkles, Minus, Plus, ChevronDown } from "lucide-react"
+import { Loader2, Lock, Check, Sparkles, Minus, Plus, ChevronDown, ArrowRight } from "lucide-react"
 import type { Match } from "@/types/database"
 import { cn } from "@/lib/utils"
 import PlayerSelect from "./PlayerSelect"
@@ -85,12 +86,14 @@ export default function PredictionForm({
   leagues,
   existingPreds,
   otherWildcardsByLeague = {},
+  nextMatchId = null,
   isLocked,
 }: {
   match: Match
   leagues: LeagueForPrediction[]
   existingPreds: ExistingPred[]
   otherWildcardsByLeague?: Record<string, number>
+  nextMatchId?: string | null
   isLocked: boolean
 }) {
   const router = useRouter()
@@ -229,6 +232,15 @@ export default function PredictionForm({
         <p className="text-gray-500 text-sm mt-1">
           Cierran {PREDICTION_LOCK_MINUTES} minutos antes del inicio del partido
         </p>
+        {nextMatchId && (
+          <Link
+            href={`/partidos/${nextMatchId}`}
+            className="inline-flex items-center gap-2 mt-4 bg-green-500/10 hover:bg-green-500/20 text-green-400 text-sm font-bold px-4 py-2.5 rounded-xl transition-colors"
+          >
+            Predecir el siguiente partido
+            <ArrowRight size={15} />
+          </Link>
+        )}
       </div>
     )
   }
@@ -554,6 +566,22 @@ export default function PredictionForm({
           <Lock size={14} className="shrink-0" />
           {saveError}
         </div>
+      )}
+
+      {/* Predecir el siguiente partido — sin volver a la lista */}
+      {nextMatchId && (
+        <Link
+          href={`/partidos/${nextMatchId}`}
+          className={cn(
+            "flex items-center justify-center gap-2 w-full font-bold py-3.5 rounded-xl transition-colors",
+            saved
+              ? "bg-green-500/15 border border-green-500/40 text-green-300"
+              : "bg-white/5 border border-white/10 text-gray-300 hover:border-white/20"
+          )}
+        >
+          Predecir el siguiente partido
+          <ArrowRight size={16} />
+        </Link>
       )}
     </div>
   )

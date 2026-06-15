@@ -34,8 +34,11 @@ export default function LeagueChat({ leagueId, currentUserId }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
 
-  function scrollToBottom(smooth = true) {
-    bottomRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "auto" })
+  // Scrollea SOLO el contenedor del chat, no la página entera. (scrollIntoView
+  // movía toda la vista al fondo al abrir la liga.)
+  function scrollToBottom() {
+    const el = scrollRef.current
+    if (el) el.scrollTop = el.scrollHeight
   }
 
   useEffect(() => {
@@ -56,7 +59,7 @@ export default function LeagueChat({ leagueId, currentUserId }: Props) {
       const msgs = ((data ?? []) as unknown as Message[]).reverse()
       setMessages(msgs)
       setLoading(false)
-      setTimeout(() => scrollToBottom(false), 100)
+      setTimeout(() => scrollToBottom(), 100)
 
       channel = supabase
         .channel(`chat-${leagueId}-${Date.now()}`)
@@ -122,11 +125,15 @@ export default function LeagueChat({ leagueId, currentUserId }: Props) {
     setSending(true)
     setError(null)
     const supabase = createClient()
-    const { error: insErr } = await supabase.from("league_messages").insert({
-      league_id: leagueId,
-      user_id: currentUserId,
-      message: trimmed,
-    })
+    const { data: inserted, error: insErr } = await supabase
+      .from("league_messages")
+      .insert({
+        league_id: leagueId,
+        user_id: currentUserId,
+        message: trimmed,
+      })
+      .select("id, user_id, message, created_at, profiles(username, display_name, avatar_config)")
+      .single()
 
     if (insErr) {
       let msg = "No se pudo enviar el mensaje"
@@ -146,6 +153,13 @@ export default function LeagueChat({ leagueId, currentUserId }: Props) {
       return
     }
 
+    // Agregar el mensaje al instante (no dependemos de Realtime para verlo).
+    // Si Realtime también lo entrega, el dedup por id evita duplicarlo.
+    if (inserted) {
+      const newMsg = inserted as unknown as Message
+      setMessages((prev) => (prev.some((m) => m.id === newMsg.id) ? prev : [...prev, newMsg]))
+      setTimeout(() => scrollToBottom(), 50)
+    }
     setInput("")
     setSending(false)
   }
