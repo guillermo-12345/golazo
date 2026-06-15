@@ -6,6 +6,7 @@ import {
   X,
   Globe,
   GitBranch,
+  Swords,
   BarChart3,
   TrendingUp,
   History,
@@ -24,6 +25,7 @@ type Props = {
 
 const ITEMS = [
   { href: "/paises", icon: Globe, label: "Países", color: "text-green-400" },
+  { href: "/llaves", icon: Swords, label: "Llaves de eliminatorias", color: "text-yellow-400" },
   { href: "/bracket", icon: GitBranch, label: "Bracket Challenge", color: "text-yellow-400" },
   { href: "/ranking", icon: BarChart3, label: "Ranking global", color: "text-yellow-400" },
   { href: "/estadisticas", icon: TrendingUp, label: "Estadísticas", color: "text-blue-400" },
