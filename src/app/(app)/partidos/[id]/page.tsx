@@ -78,6 +78,7 @@ export default async function PartidoDetailPage({
     advanced_picks: Record<string, unknown>
     points_wagered: number
     wildcard_used: string | null
+    points_earned: number | null
   }>
 
   // Comodines ya usados por el usuario en OTROS partidos, por liga (límite: 2)

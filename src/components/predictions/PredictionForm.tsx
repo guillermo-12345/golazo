@@ -60,6 +60,30 @@ type ExistingPred = {
   advanced_picks: AdvancedPicks
   points_wagered: number
   wildcard_used: string | null
+  points_earned?: number | null
+}
+
+const WILDCARD_LABELS: Record<string, string> = {
+  todo_o_nada: "Todo o Nada",
+  escudo: "Escudo",
+  ladron: "Ladrón",
+}
+
+/** Convierte las apuestas avanzadas en pares legibles {label, value} para la vista bloqueada. */
+function describePicks(picks: AdvancedPicks, homeCode: string, awayCode: string): { label: string; value: string }[] {
+  const side = (v?: string) => (v === "home" ? homeCode : v === "away" ? awayCode : "")
+  const out: { label: string; value: string }[] = []
+  if (picks.firstScorer) out.push({ label: "Goleador", value: picks.firstScorer })
+  if (picks.firstTeamToScore) out.push({ label: "1er en marcar", value: side(picks.firstTeamToScore) })
+  if (picks.goalMinute) out.push({ label: "Min. 1er gol", value: picks.goalMinute + "'" })
+  if (picks.halftimeResult) out.push({ label: "Al descanso", value: picks.halftimeResult })
+  if (picks.totalYellowCards) out.push({ label: "Amarillas", value: picks.totalYellowCards })
+  if (picks.anyRedCard) out.push({ label: "¿Roja?", value: picks.anyRedCard === "yes" ? "Sí" : "No" })
+  if (picks.totalCorners) out.push({ label: "Córners", value: picks.totalCorners })
+  if (picks.morePossession) out.push({ label: "Más posesión", value: side(picks.morePossession) })
+  if (picks.totalShots) out.push({ label: "Tiros", value: picks.totalShots })
+  if (picks.totalFouls) out.push({ label: "Faltas", value: picks.totalFouls })
+  return out
 }
 
 const MINUTE_RANGES = ["0-15", "16-30", "31-45", "46-60", "61-75", "76-90"]
@@ -225,22 +249,104 @@ export default function PredictionForm({
   }
 
   if (isLocked) {
+    const nextLink = nextMatchId ? (
+      <Link
+        href={`/partidos/${nextMatchId}`}
+        className="inline-flex items-center justify-center gap-2 mt-2 bg-green-500/10 hover:bg-green-500/20 text-green-400 text-sm font-bold px-4 py-2.5 rounded-xl transition-colors w-full"
+      >
+        Predecir el siguiente partido
+        <ArrowRight size={15} />
+      </Link>
+    ) : null
+
+    // Sin predicción en ninguna liga
+    if (existingPreds.length === 0) {
+      return (
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 text-center">
+          <Lock size={24} className="text-gray-500 mx-auto mb-3" />
+          <p className="text-gray-300 font-medium">Predicciones cerradas</p>
+          <p className="text-gray-500 text-sm mt-1">No hiciste tu predicción para este partido</p>
+          {nextLink}
+        </div>
+      )
+    }
+
+    // Vista bloqueada: muestra lo que apostó en cada liga (solo lectura)
     return (
-      <div className="bg-white/5 border border-white/10 rounded-2xl p-6 text-center">
-        <Lock size={24} className="text-gray-500 mx-auto mb-3" />
-        <p className="text-gray-300 font-medium">Las predicciones están cerradas</p>
-        <p className="text-gray-500 text-sm mt-1">
-          Cierran {PREDICTION_LOCK_MINUTES} minutos antes del inicio del partido
-        </p>
-        {nextMatchId && (
-          <Link
-            href={`/partidos/${nextMatchId}`}
-            className="inline-flex items-center gap-2 mt-4 bg-green-500/10 hover:bg-green-500/20 text-green-400 text-sm font-bold px-4 py-2.5 rounded-xl transition-colors"
-          >
-            Predecir el siguiente partido
-            <ArrowRight size={15} />
-          </Link>
-        )}
+      <div className="space-y-3">
+        <div className="flex items-center justify-center gap-1.5 text-xs text-gray-500">
+          <Lock size={11} className="shrink-0" />
+          <span>Predicciones cerradas · esta es tu apuesta</span>
+        </div>
+        {existingPreds.map((pred) => {
+          const league = leagues.find((l) => l.id === pred.league_id)
+          const picks = describePicks(pred.advanced_picks ?? {}, match.home_team_code, match.away_team_code)
+          const hasPts = pred.points_earned !== null && pred.points_earned !== undefined
+          return (
+            <div key={pred.league_id} className="bg-white/5 border border-white/10 rounded-2xl p-5">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider truncate">
+                  {league?.name ?? "Liga"}
+                </span>
+                {hasPts && (
+                  <span
+                    className={cn(
+                      "text-xs font-black px-2 py-0.5 rounded-lg shrink-0",
+                      (pred.points_earned ?? 0) > 0
+                        ? "bg-green-500/15 text-green-400"
+                        : "bg-white/5 text-gray-500"
+                    )}
+                  >
+                    {(pred.points_earned ?? 0) > 0 ? `+${pred.points_earned}` : "0"} pts
+                  </span>
+                )}
+              </div>
+
+              {/* Marcador apostado */}
+              <div className="flex items-center justify-center gap-4">
+                <div className="text-center">
+                  <p className="text-gray-500 text-xs font-bold mb-1">{match.home_team_code}</p>
+                  <div className="w-14 h-14 bg-white/5 border-2 border-white/10 rounded-2xl flex items-center justify-center">
+                    <span className="text-3xl font-black text-white">{pred.home_score_pred}</span>
+                  </div>
+                </div>
+                <span className="text-2xl text-gray-600">·</span>
+                <div className="text-center">
+                  <p className="text-gray-500 text-xs font-bold mb-1">{match.away_team_code}</p>
+                  <div className="w-14 h-14 bg-white/5 border-2 border-white/10 rounded-2xl flex items-center justify-center">
+                    <span className="text-3xl font-black text-white">{pred.away_score_pred}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Comodín */}
+              {pred.wildcard_used && (
+                <div className="flex items-center justify-center gap-1.5 mt-3">
+                  <Sparkles size={12} className="text-yellow-400" />
+                  <span className="text-xs text-gray-400">
+                    Comodín: <span className="text-white font-medium">{WILDCARD_LABELS[pred.wildcard_used] ?? pred.wildcard_used}</span>
+                  </span>
+                </div>
+              )}
+
+              {/* Apuestas avanzadas */}
+              {picks.length > 0 && (
+                <div className="mt-4 pt-3 border-t border-white/10">
+                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Avanzadas</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {picks.map((p) => (
+                      <span key={p.label} className="text-xs bg-white/5 border border-white/10 rounded-lg px-2 py-1">
+                        <span className="text-gray-500">{p.label}:</span>{" "}
+                        <span className="text-white font-medium">{p.value}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        })}
+        {nextLink}
       </div>
     )
   }
