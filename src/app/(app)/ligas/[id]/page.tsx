@@ -7,6 +7,7 @@ import JoinLeagueButton from "@/components/leagues/JoinLeagueButton"
 import LeagueIcon from "@/components/LeagueIcon"
 import LeaderboardTable from "@/components/leagues/LeaderboardTable"
 import ShareButton from "@/components/ShareButton"
+import ShareCard from "@/components/leagues/ShareCard"
 import LeaveLeagueButton from "@/components/leagues/LeaveLeagueButton"
 import LeagueChat from "@/components/leagues/LeagueChat"
 import { MessageCircle } from "lucide-react"
@@ -167,6 +168,12 @@ export default async function LigaDetailPage({ params }: { params: Promise<{ id:
           currentUserId={user!.id}
           multipliers={league.config?.multipliers}
         />
+
+        {isMember && (
+          <div className="mt-4">
+            <ShareCard leagueId={league.id} userId={user!.id} />
+          </div>
+        )}
       </section>
 
       {/* Chat de liga — solo para miembros */}
