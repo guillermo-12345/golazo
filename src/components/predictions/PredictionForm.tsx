@@ -219,7 +219,9 @@ export default function PredictionForm({
   const [savedCount, setSavedCount] = useState(1)
   const [applyAll, setApplyAll] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
-  const [advancedExpanded, setAdvancedExpanded] = useState(false)
+  // Arranca abierta para que las avanzadas se vean siempre (y al reabrir un
+  // partido ya predicho, se vean los picks guardados sin tener que desplegar).
+  const [advancedExpanded, setAdvancedExpanded] = useState(true)
 
   const existing = existingPreds.find((p) => p.league_id === selectedLeagueId)
   const [homeScore, setHomeScore] = useState(existing?.home_score_pred ?? 0)
