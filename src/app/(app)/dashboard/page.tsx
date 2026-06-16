@@ -10,6 +10,7 @@ import Avatar from "@/components/Avatar"
 import LocalDateTime from "@/components/LocalDateTime"
 import DailyChallenge from "@/components/DailyChallenge"
 import WelcomeBanner from "@/components/WelcomeBanner"
+import LiveMatchBanner from "@/components/LiveMatchBanner"
 import { Crown } from "lucide-react"
 import { getLocale } from "@/lib/get-locale"
 import { PREDICTION_LOCK_MINUTES } from "@/lib/predictions"
@@ -158,6 +159,9 @@ export default async function DashboardPage() {
             : "¿Listo para predecir los próximos partidos?"}
         </p>
       </div>
+
+      {/* En vivo o último partido, siempre a mano */}
+      <LiveMatchBanner />
 
       {/* Banner de bienvenida — se muestra una sola vez */}
       <WelcomeBanner displayName={profile?.display_name ?? ""} />
