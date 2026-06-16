@@ -6,6 +6,7 @@ import TeamFlag from "@/components/TeamFlag"
 import { TEAMS } from "@/lib/teams"
 import { Loader2, Check, ChevronDown, Trophy, Medal, Award, Target } from "lucide-react"
 import { cn } from "@/lib/utils"
+import ScorerSelect from "@/components/bracket/ScorerSelect"
 
 type League = {
   id: string
@@ -152,14 +153,10 @@ export default function BracketForm({ leagues, existingBrackets, isLocked }: Pro
           </div>
           <span className="text-green-400 font-bold text-sm">+25 pts</span>
         </div>
-        <input
-          type="text"
-          value={picks.topScorer ?? ""}
-          onChange={(e) => setPicks((p) => ({ ...p, topScorer: e.target.value }))}
-          placeholder="Ej: Lionel Messi"
+        <ScorerSelect
+          value={picks.topScorer}
+          onChange={(v) => setPicks((p) => ({ ...p, topScorer: v }))}
           disabled={isLocked}
-          maxLength={60}
-          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-yellow-500/50 transition-colors disabled:opacity-50"
         />
       </div>
 
