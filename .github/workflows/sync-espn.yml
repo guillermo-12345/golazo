@@ -2,9 +2,11 @@ name: Sync resultados (ESPN)
 
 on:
   schedule:
-    # Cada 20 minutos durante el Mundial (11 jun - 19 jul 2026).
-    # ESPN es gratis: esto NO consume consultas de API-Football.
-    - cron: "*/20 * * * *"
+    # Cada 5 minutos durante el Mundial (11 jun - 19 jul 2026) — el mínimo
+    # práctico de GitHub Actions. ESPN es gratis: NO consume API-Football.
+    # Para "casi en vivo" durante un partido, el cliente además dispara un
+    # refresh cada 90s desde la página del partido (ver /api/matches/live-refresh).
+    - cron: "*/5 * * * *"
   workflow_dispatch:
     inputs:
       full:

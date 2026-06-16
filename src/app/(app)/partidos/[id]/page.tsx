@@ -13,6 +13,7 @@ import LiveScore from "@/components/matches/LiveScore"
 import LiveMatchScoreboard from "@/components/matches/LiveMatchScoreboard"
 import MatchEvents from "@/components/matches/MatchEvents"
 import MatchStatistics from "@/components/matches/MatchStatistics"
+import LiveSyncTrigger from "@/components/matches/LiveSyncTrigger"
 import { isPredictionLocked, PREDICTION_LOCK_MINUTES } from "@/lib/predictions"
 
 export default async function PartidoDetailPage({
@@ -109,8 +110,18 @@ export default async function PartidoDetailPage({
   // Cierra PREDICTION_LOCK_MINUTES antes del kickoff (también validado por RLS)
   const isLocked = isPredictionLocked(match.scheduled_at, match.status)
 
+  // Ventana "en vivo": partido en juego o dentro de su horario (aunque la DB
+  // todavía no lo marque live). Activa el refresh casi en vivo del cliente.
+  const kickoff = new Date(match.scheduled_at).getTime()
+  const liveWindow =
+    match.status === "live" ||
+    (match.status === "scheduled" &&
+      Date.now() >= kickoff - 5 * 60 * 1000 &&
+      Date.now() <= kickoff + 150 * 60 * 1000)
+
   return (
     <main className="max-w-2xl mx-auto px-4 md:px-8 py-8">
+      <LiveSyncTrigger active={liveWindow} />
       <div className="flex items-center justify-between mb-6">
         <Link
           href="/partidos"

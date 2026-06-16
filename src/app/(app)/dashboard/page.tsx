@@ -6,8 +6,11 @@ import Link from "next/link"
 import type { Profile, Match } from "@/types/database"
 import LeagueIcon from "@/components/LeagueIcon"
 import TeamFlag from "@/components/TeamFlag"
+import Avatar from "@/components/Avatar"
+import LocalDateTime from "@/components/LocalDateTime"
 import DailyChallenge from "@/components/DailyChallenge"
 import WelcomeBanner from "@/components/WelcomeBanner"
+import { Crown } from "lucide-react"
 import { getLocale } from "@/lib/get-locale"
 import { PREDICTION_LOCK_MINUTES } from "@/lib/predictions"
 
@@ -22,7 +25,7 @@ export default async function DashboardPage() {
   // que todavía están abiertos (faltan más de PREDICTION_LOCK_MINUTES).
   const lockThreshold = new Date(Date.now() + PREDICTION_LOCK_MINUTES * 60 * 1000).toISOString()
 
-  const [profileRes, matchesRes, leaguesRes, predictionsRes, badgesRes, recentRes, globalCountRes, openRes, allPredsRes] = await Promise.all([
+  const [profileRes, matchesRes, leaguesRes, predictionsRes, badgesRes, recentRes, globalCountRes, openRes, allPredsRes, globalTopRes] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user!.id).single(),
     supabase
       .from("matches")
@@ -61,12 +64,24 @@ export default async function DashboardPage() {
       .order("scheduled_at", { ascending: true }),
     // Todos los partidos que el usuario ya predijo (en cualquier liga)
     supabase.from("predictions").select("match_id").eq("user_id", user!.id),
+    // Top 5 de la Liga Global para la tabla general del inicio
+    supabase
+      .from("league_members")
+      .select("user_id, points, profiles(username, display_name, avatar_config)")
+      .eq("league_id", GLOBAL_LEAGUE_ID)
+      .order("points", { ascending: false })
+      .limit(5),
   ])
 
   const profile = profileRes.data as Profile | null
   const upcomingMatches = (matchesRes.data ?? []) as Match[]
   const recentResults = (recentRes.data ?? []) as Match[]
   const globalMembersCount = globalCountRes.count ?? 0
+  const globalTop = (globalTopRes.data ?? []) as unknown as Array<{
+    user_id: string
+    points: number
+    profiles: { username: string; display_name: string; avatar_config: unknown } | null
+  }>
 
   // Set de partidos ya predichos + pendientes por predecir
   const predictedSet = new Set(
@@ -213,6 +228,44 @@ export default async function DashboardPage() {
         </Link>
       )}
 
+      {/* Tabla general — top 5 de la Liga Global */}
+      {globalTop.length > 0 && (
+        <Link
+          href={`/ligas/${GLOBAL_LEAGUE_ID}`}
+          className="block bg-white/5 border border-white/10 hover:border-yellow-500/30 rounded-2xl p-4 mb-6 transition-colors"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-bold text-white">Tabla general</h2>
+            <span className="text-green-500 text-xs font-medium">Ver liga →</span>
+          </div>
+          <div className="space-y-1.5">
+            {globalTop.map((m, idx) => {
+              const isMe = m.user_id === user!.id
+              return (
+                <div
+                  key={m.user_id}
+                  className={`flex items-center gap-3 rounded-lg px-2 py-1.5 ${isMe ? "bg-green-500/10" : ""}`}
+                >
+                  <span className="w-5 text-center shrink-0">
+                    {idx === 0 ? (
+                      <Crown size={14} className="text-yellow-400 mx-auto" />
+                    ) : (
+                      <span className="text-xs font-bold text-gray-500">{idx + 1}</span>
+                    )}
+                  </span>
+                  <Avatar config={m.profiles?.avatar_config} username={m.profiles?.username} size={24} />
+                  <span className="flex-1 min-w-0 text-sm text-white truncate">
+                    {m.profiles?.display_name ?? "Usuario"}
+                    {isMe && <span className="text-green-400 text-xs ml-1">(vos)</span>}
+                  </span>
+                  <span className="text-white font-bold text-sm tabular-nums">{m.points}</span>
+                </div>
+              )
+            })}
+          </div>
+        </Link>
+      )}
+
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
         <div className="bg-white/5 border border-white/10 rounded-2xl p-4 text-center">
           <Trophy size={20} className="text-yellow-400 mx-auto mb-2" />
@@ -297,7 +350,12 @@ export default async function DashboardPage() {
 
                   {/* Centro: tiempo + vs */}
                   <div className="text-center flex-1 min-w-0">
-                    <p className="text-xs text-gray-500 mb-1">
+                    <LocalDateTime
+                      date={match.scheduled_at}
+                      formatStr="d MMM · HH:mm"
+                      className="text-xs text-gray-400 font-medium block mb-0.5"
+                    />
+                    <p className="text-[10px] text-gray-600 mb-1">
                       {formatDistanceToNow(new Date(match.scheduled_at), { addSuffix: true, locale: es })}
                     </p>
                     <p className="text-white font-bold text-sm">vs</p>
