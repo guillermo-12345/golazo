@@ -46,8 +46,8 @@ export default async function BracketPage() {
     points_earned: number
   }>
 
-  // Cierre del bracket: el día antes del inicio del Mundial (10 jun 2026)
-  const bracketDeadline = new Date("2026-06-10T23:59:59Z")
+  // Cierre del bracket: fin del 24 de junio 2026 (medianoche hora Argentina)
+  const bracketDeadline = new Date("2026-06-25T02:59:59Z")
   const isLocked = new Date() > bracketDeadline
 
   return (
@@ -58,7 +58,7 @@ export default async function BracketPage() {
           <h1 className="text-2xl md:text-3xl font-black text-white">Bracket Challenge</h1>
         </div>
         <p className="text-gray-500 text-sm">
-          Predecí el podio del Mundial 2026 antes de que arranque. Cada acierto suma puntos a tu liga.
+          Predecí el podio del Mundial 2026 antes del 24 de junio. Cada acierto suma puntos a tu liga.
         </p>
       </header>
 
@@ -84,7 +84,7 @@ export default async function BracketPage() {
         <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-5 mb-6 text-center">
           <Lock size={24} className="text-red-400 mx-auto mb-2" />
           <p className="text-white font-bold">El bracket está cerrado</p>
-          <p className="text-gray-400 text-sm mt-1">Cerró el 10 de junio antes del inicio del Mundial</p>
+          <p className="text-gray-400 text-sm mt-1">Cerró el 24 de junio</p>
         </div>
       )}
 
