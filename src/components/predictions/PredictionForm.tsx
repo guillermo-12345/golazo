@@ -86,6 +86,94 @@ function describePicks(picks: AdvancedPicks, homeCode: string, awayCode: string)
   return out
 }
 
+type PickResult = { label: string; mine: string; result: string; points: number; hit: boolean }
+
+/**
+ * Evalúa cada apuesta avanzada contra el resultado real (extra_data) para
+ * mostrar si acertó y cuántos puntos dio. Espeja calculate_advanced_points
+ * del SQL. Devuelve [] si no hay datos del partido todavía.
+ */
+function evaluatePicks(
+  picks: AdvancedPicks,
+  extra: Record<string, unknown> | null | undefined,
+  homeCode: string,
+  awayCode: string
+): PickResult[] {
+  if (!extra) return []
+  const side = (v?: string) => (v === "home" ? homeCode : v === "away" ? awayCode : "—")
+  const pair = (k: string) => {
+    const o = extra[k] as { home?: number; away?: number } | undefined
+    return o ? (Number(o.home) || 0) + (Number(o.away) || 0) : null
+  }
+  const inRange = (pick: string, total: number | null) => {
+    if (total === null) return false
+    const [a, b] = pick.split("-").map((n) => parseInt(n, 10))
+    return total >= a && total <= b
+  }
+  const out: PickResult[] = []
+
+  if (picks.firstScorer) {
+    const real = (extra.firstScorer as string) || ""
+    const hit = real.length > 0 && real.toLowerCase().includes(picks.firstScorer.toLowerCase())
+    out.push({ label: "Goleador", mine: picks.firstScorer, result: real || "sin datos", points: hit ? ADVANCED_POINTS.firstScorer : 0, hit })
+  }
+  if (picks.firstTeamToScore) {
+    const real = extra.firstTeamToScore as string | undefined
+    const hit = real === picks.firstTeamToScore
+    out.push({ label: "1er en marcar", mine: side(picks.firstTeamToScore), result: real ? side(real) : "nadie", points: hit ? ADVANCED_POINTS.firstTeamToScore : 0, hit })
+  }
+  if (picks.goalMinute) {
+    const real = (extra.firstGoalMinute as number | null | undefined) ?? null
+    const hit = inRange(picks.goalMinute, real)
+    out.push({ label: "Min. 1er gol", mine: picks.goalMinute + "'", result: real != null ? real + "'" : "sin goles", points: hit ? ADVANCED_POINTS.goalMinute : 0, hit })
+  }
+  if (picks.halftimeResult) {
+    const ht = extra.halftime as { home?: number; away?: number } | undefined
+    const real = ht ? `${ht.home ?? 0}-${ht.away ?? 0}` : null
+    const hit = real === picks.halftimeResult
+    out.push({ label: "Al descanso", mine: picks.halftimeResult, result: real ?? "—", points: hit ? ADVANCED_POINTS.halftimeResult : 0, hit })
+  }
+  if (picks.totalYellowCards) {
+    const t = pair("yellowCards")
+    const hit = inRange(picks.totalYellowCards, t)
+    out.push({ label: "Amarillas", mine: picks.totalYellowCards, result: t != null ? String(t) : "—", points: hit ? ADVANCED_POINTS.yellowCards : 0, hit })
+  }
+  if (picks.anyRedCard) {
+    const t = pair("redCards")
+    const realYes = (t ?? 0) > 0
+    const hit = (picks.anyRedCard === "yes") === realYes
+    const pts = hit ? (picks.anyRedCard === "yes" ? ADVANCED_POINTS.redCardYes : ADVANCED_POINTS.redCardNo) : 0
+    out.push({ label: "¿Roja?", mine: picks.anyRedCard === "yes" ? "Sí" : "No", result: realYes ? "Sí" : "No", points: pts, hit })
+  }
+  if (picks.totalCorners) {
+    const t = pair("corners")
+    const hit = inRange(picks.totalCorners, t)
+    out.push({ label: "Córners", mine: picks.totalCorners, result: t != null ? String(t) : "—", points: hit ? ADVANCED_POINTS.corners : 0, hit })
+  }
+  if (picks.morePossession) {
+    const p = extra.possession as { home?: number; away?: number } | undefined
+    let winner: string | null = null
+    if (p) {
+      const h = Number(p.home) || 0
+      const a = Number(p.away) || 0
+      winner = h > a ? "home" : a > h ? "away" : null
+    }
+    const hit = winner === picks.morePossession
+    out.push({ label: "Más posesión", mine: side(picks.morePossession), result: winner ? side(winner) : "—", points: hit ? ADVANCED_POINTS.possession : 0, hit })
+  }
+  if (picks.totalShots) {
+    const t = pair("totalShots")
+    const hit = inRange(picks.totalShots, t)
+    out.push({ label: "Tiros", mine: picks.totalShots, result: t != null ? String(t) : "—", points: hit ? ADVANCED_POINTS.totalShots : 0, hit })
+  }
+  if (picks.totalFouls) {
+    const t = pair("fouls")
+    const hit = inRange(picks.totalFouls, t)
+    out.push({ label: "Faltas", mine: picks.totalFouls, result: t != null ? String(t) : "—", points: hit ? ADVANCED_POINTS.totalFouls : 0, hit })
+  }
+  return out
+}
+
 const MINUTE_RANGES = ["0-15", "16-30", "31-45", "46-60", "61-75", "76-90"]
 const YELLOW_RANGES = ["0-3", "4-6", "7-9", "10-12", "13-20"]
 const CORNER_RANGES = ["0-5", "6-10", "11-15", "16-20"]
@@ -280,6 +368,15 @@ export default function PredictionForm({
         </div>
         {existingPreds.map((pred) => {
           const league = leagues.find((l) => l.id === pred.league_id)
+          const extra = (match.extra_data ?? null) as Record<string, unknown> | null
+          const showResults =
+            match.status === "finished" &&
+            !!extra &&
+            ("halftime" in extra || "firstScorer" in extra || "corners" in extra ||
+              "yellowCards" in extra || "possession" in extra)
+          const evaluated = showResults
+            ? evaluatePicks(pred.advanced_picks ?? {}, extra, match.home_team_code, match.away_team_code)
+            : []
           const picks = describePicks(pred.advanced_picks ?? {}, match.home_team_code, match.away_team_code)
           const hasPts = pred.points_earned !== null && pred.points_earned !== undefined
           return (
@@ -329,8 +426,29 @@ export default function PredictionForm({
                 </div>
               )}
 
-              {/* Apuestas avanzadas */}
-              {picks.length > 0 && (
+              {/* Apuestas avanzadas — con resultado y puntos si el partido terminó */}
+              {evaluated.length > 0 ? (
+                <div className="mt-4 pt-3 border-t border-white/10">
+                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">
+                    Avanzadas — así sumaste
+                  </p>
+                  <div className="space-y-1.5">
+                    {evaluated.map((p) => (
+                      <div key={p.label} className="flex items-center justify-between gap-2 text-xs">
+                        <span className="text-gray-500 shrink-0">{p.label}</span>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-gray-300 truncate">{p.mine}</span>
+                          {p.hit ? (
+                            <span className="text-green-400 font-bold whitespace-nowrap">✓ +{p.points}</span>
+                          ) : (
+                            <span className="text-gray-600 whitespace-nowrap">✗ fue {p.result}</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : picks.length > 0 ? (
                 <div className="mt-4 pt-3 border-t border-white/10">
                   <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Avanzadas</p>
                   <div className="flex flex-wrap gap-1.5">
@@ -342,7 +460,7 @@ export default function PredictionForm({
                     ))}
                   </div>
                 </div>
-              )}
+              ) : null}
             </div>
           )
         })}
