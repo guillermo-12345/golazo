@@ -24,6 +24,13 @@ export const metadata: Metadata = {
   applicationName: "Golazo",
   authors: [{ name: "Guillermo Ibañez" }],
   creator: "Guillermo Ibañez",
+  manifest: "/manifest.webmanifest",
+  // iOS: tratar como app standalone al "Agregar a pantalla de inicio"
+  appleWebApp: {
+    capable: true,
+    title: "Golazo",
+    statusBarStyle: "black-translucent",
+  },
   openGraph: {
     title: "Golazo — Quiniela del Mundial 2026",
     description: "Predecí, competí y ganá. La quiniela más adictiva del Mundial 2026.",
@@ -42,6 +49,8 @@ export const viewport = {
   themeColor: "#16a34a",
   width: "device-width",
   initialScale: 1,
+  // Ocupa toda la pantalla en iPhone (respeta el notch con safe-area)
+  viewportFit: "cover" as const,
 }
 
 export default function RootLayout({

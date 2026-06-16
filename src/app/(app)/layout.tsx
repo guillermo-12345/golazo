@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import DashboardNav from "@/components/layout/DashboardNav"
 import Footer from "@/components/Footer"
+import InstallPrompt from "@/components/InstallPrompt"
 import type { Profile } from "@/types/database"
 import { isAdminEmail } from "@/lib/admin"
 
@@ -34,6 +35,7 @@ export default async function AppLayout({
         <div className="flex-1">{children}</div>
         <Footer />
       </div>
+      <InstallPrompt />
     </div>
   )
 }
