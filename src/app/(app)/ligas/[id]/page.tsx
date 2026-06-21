@@ -9,6 +9,7 @@ import LeaderboardTable from "@/components/leagues/LeaderboardTable"
 import ShareButton from "@/components/ShareButton"
 import ShareCard from "@/components/leagues/ShareCard"
 import LeaveLeagueButton from "@/components/leagues/LeaveLeagueButton"
+import FavoriteLeagueButton from "@/components/leagues/FavoriteLeagueButton"
 import LeagueChat from "@/components/leagues/LeagueChat"
 import { MessageCircle } from "lucide-react"
 
@@ -53,7 +54,7 @@ export default async function LigaDetailPage({ params }: { params: Promise<{ id:
       .order("points", { ascending: false }),
     supabase
       .from("league_members")
-      .select("user_id")
+      .select("user_id, is_favorite")
       .eq("league_id", id)
       .eq("user_id", user!.id)
       .maybeSingle(),
@@ -62,7 +63,9 @@ export default async function LigaDetailPage({ params }: { params: Promise<{ id:
   if (!leagueRes.data) notFound()
   const league = leagueRes.data as League
   const members = (membersRes.data ?? []) as unknown as Member[]
-  const isMember = !!myMembershipRes.data
+  const myMembership = myMembershipRes.data as { is_favorite?: boolean } | null
+  const isMember = !!myMembership
+  const isFavorite = myMembership?.is_favorite ?? false
   const isCreator = league.created_by === user!.id
 
   const shareText =
@@ -80,11 +83,14 @@ export default async function LigaDetailPage({ params }: { params: Promise<{ id:
           <ArrowLeft size={16} />
           Volver a ligas
         </Link>
-        <ShareButton
-          title={`Liga "${league.name}" en Golazo`}
-          text={shareText}
-          variant="compact"
-        />
+        <div className="flex items-center gap-2">
+          {isMember && <FavoriteLeagueButton leagueId={league.id} initialFavorite={isFavorite} />}
+          <ShareButton
+            title={`Liga "${league.name}" en Golazo`}
+            text={shareText}
+            variant="compact"
+          />
+        </div>
       </div>
 
       {/* Banner */}

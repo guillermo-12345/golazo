@@ -11,7 +11,7 @@ import LocalDateTime from "@/components/LocalDateTime"
 import DailyChallenge from "@/components/DailyChallenge"
 import WelcomeBanner from "@/components/WelcomeBanner"
 import LiveMatchBanner from "@/components/LiveMatchBanner"
-import { Crown } from "lucide-react"
+import { Crown, Star } from "lucide-react"
 import { getLocale } from "@/lib/get-locale"
 import { PREDICTION_LOCK_MINUTES } from "@/lib/predictions"
 
@@ -37,7 +37,7 @@ export default async function DashboardPage() {
       .limit(5),
     supabase
       .from("league_members")
-      .select("league_id, points, rank, leagues(*)")
+      .select("league_id, points, rank, is_favorite, leagues(*)")
       .eq("user_id", user!.id)
       .order("points", { ascending: false }),
     supabase
@@ -99,10 +99,11 @@ export default async function DashboardPage() {
   const pendingMatches = openMatches.filter((m) => !predictedSet.has(m.id))
   const pendingCount = pendingMatches.length
   const nextToPredict = pendingMatches[0] ?? null
-  const myLeagues = (leaguesRes.data ?? []) as unknown as Array<{
+  const myLeaguesRaw = (leaguesRes.data ?? []) as unknown as Array<{
     league_id: string
     points: number
     rank: number | null
+    is_favorite: boolean
     leagues: {
       id: string
       name: string
@@ -112,6 +113,10 @@ export default async function DashboardPage() {
       config: { icon?: { style: string; seed: string } } | null
     } | null
   }>
+  // La liga favorita primero; el resto por puntos (ya viene ordenado así)
+  const myLeagues = [...myLeaguesRaw].sort(
+    (a, b) => Number(b.is_favorite) - Number(a.is_favorite)
+  )
 
   // Posición en la Liga Global (la oficial donde están todos)
   const globalMembership = myLeagues.find((m) => m.leagues?.type === "global")
@@ -490,6 +495,9 @@ export default async function DashboardPage() {
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
+                    {member.is_favorite && (
+                      <Star size={13} className="fill-yellow-400 text-yellow-400 shrink-0" />
+                    )}
                     <p className="text-white font-semibold truncate">{league.name}</p>
                     {league.is_verified && <span className="text-yellow-400 text-xs">✓</span>}
                   </div>

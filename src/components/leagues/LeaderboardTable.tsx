@@ -141,7 +141,13 @@ export default function LeaderboardTable({ leagueId, initialMembers, currentUser
         .eq("matches.status", "finished")
         .order("scheduled_at", { ascending: false, referencedTable: "matches" })
 
-      const rows = (data ?? []) as unknown as HistoryRow[]
+      // Orden cronológico (más reciente primero): el order de PostgREST sobre
+      // la tabla embebida no reordena el arreglo padre, así que ordenamos acá.
+      const rows = ((data ?? []) as unknown as HistoryRow[]).sort(
+        (a, b) =>
+          new Date(b.matches?.scheduled_at ?? 0).getTime() -
+          new Date(a.matches?.scheduled_at ?? 0).getTime()
+      )
       setHistory((prev) => new Map(prev).set(userId, rows))
       setLoadingHistory(false)
     }

@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { RefreshCw, Loader2, Check, Pencil, Search, Users, Calculator } from "lucide-react"
+import { RefreshCw, Loader2, Check, Pencil, Search, Users, Calculator, ClipboardList } from "lucide-react"
 
 export default function AdminTools() {
   const [syncing, setSyncing] = useState<string | null>(null)
@@ -15,6 +15,12 @@ export default function AdminTools() {
   // Recálculo de puntos
   const [recalculating, setRecalculating] = useState(false)
   const [recalcResult, setRecalcResult] = useState<string | null>(null)
+
+  // Estado de predicciones por partido
+  const [psMatches, setPsMatches] = useState<Array<{ id: string; home_team: string; away_team: string; scheduled_at: string }>>([])
+  const [psSelected, setPsSelected] = useState<string>("")
+  const [psLoading, setPsLoading] = useState(false)
+  const [psResult, setPsResult] = useState<{ predicted: string[]; missing: string[] } | null>(null)
 
   // Cargar resultado manual
   const [query, setQuery] = useState("")
@@ -50,6 +56,39 @@ export default function AdminTools() {
       setPlayersResult("Error al sincronizar planteles")
     }
     setSyncingPlayers(false)
+  }
+
+  // Cargar próximos partidos (ventana ±3 días) para el selector de estado
+  useEffect(() => {
+    async function loadMatches() {
+      const supabase = createClient()
+      const from = new Date(Date.now() - 2 * 86400000).toISOString()
+      const to = new Date(Date.now() + 5 * 86400000).toISOString()
+      const { data } = await supabase
+        .from("matches")
+        .select("id, home_team, away_team, scheduled_at")
+        .gte("scheduled_at", from)
+        .lte("scheduled_at", to)
+        .order("scheduled_at", { ascending: true })
+      const list = (data ?? []) as typeof psMatches
+      setPsMatches(list)
+      if (list.length > 0) setPsSelected(list[0].id)
+    }
+    loadMatches()
+  }, [])
+
+  async function loadPredictionStatus(matchId: string) {
+    if (!matchId) return
+    setPsLoading(true)
+    setPsResult(null)
+    try {
+      const res = await fetch(`/api/admin/prediction-status?match=${matchId}`, { method: "GET" })
+      const data = await res.json()
+      if (data.ok) setPsResult({ predicted: data.predicted, missing: data.missing })
+    } catch {
+      // noop
+    }
+    setPsLoading(false)
   }
 
   async function recalculate() {
@@ -212,6 +251,75 @@ export default function AdminTools() {
             <pre className="mt-3 bg-black/40 border border-white/10 rounded-lg p-3 text-xs text-purple-300 overflow-x-auto">
               {recalcResult}
             </pre>
+          )}
+        </div>
+      </section>
+
+      {/* Estado de predicciones por partido */}
+      <section>
+        <div className="flex items-center gap-2 mb-3">
+          <ClipboardList size={18} className="text-cyan-400" />
+          <h2 className="text-lg font-bold text-white">¿Quién predijo?</h2>
+        </div>
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+          <p className="text-gray-500 text-xs mb-3">
+            Mirá quién ya hizo su predicción para un partido y a quién le falta
+            (sobre la Liga Global, donde están todos).
+          </p>
+          <div className="flex flex-col sm:flex-row gap-2 mb-4">
+            <select
+              value={psSelected}
+              onChange={(e) => setPsSelected(e.target.value)}
+              className="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500/50"
+            >
+              {psMatches.length === 0 && <option value="">Sin partidos próximos</option>}
+              {psMatches.map((m) => (
+                <option key={m.id} value={m.id} className="bg-[#111]">
+                  {m.home_team} vs {m.away_team} · {new Date(m.scheduled_at).toLocaleDateString("es", { day: "numeric", month: "short" })}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={() => loadPredictionStatus(psSelected)}
+              disabled={psLoading || !psSelected}
+              className="flex items-center justify-center gap-2 bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-black font-bold px-4 py-2.5 rounded-xl text-sm transition-colors shrink-0"
+            >
+              {psLoading ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
+              Ver
+            </button>
+          </div>
+
+          {psResult && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="bg-green-500/5 border border-green-500/20 rounded-xl p-3">
+                <p className="text-green-400 text-xs font-bold mb-2 uppercase tracking-wider">
+                  Ya predijeron ({psResult.predicted.length})
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {psResult.predicted.length === 0 ? (
+                    <span className="text-gray-600 text-xs">Nadie todavía</span>
+                  ) : (
+                    psResult.predicted.map((n) => (
+                      <span key={n} className="bg-green-500/10 text-green-300 text-xs px-2 py-1 rounded-lg">{n}</span>
+                    ))
+                  )}
+                </div>
+              </div>
+              <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-3">
+                <p className="text-red-400 text-xs font-bold mb-2 uppercase tracking-wider">
+                  Faltan ({psResult.missing.length})
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {psResult.missing.length === 0 ? (
+                    <span className="text-gray-600 text-xs">¡Todos predijeron! 🎉</span>
+                  ) : (
+                    psResult.missing.map((n) => (
+                      <span key={n} className="bg-red-500/10 text-red-300 text-xs px-2 py-1 rounded-lg">{n}</span>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </section>
