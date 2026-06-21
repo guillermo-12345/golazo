@@ -62,6 +62,8 @@ function basicPoints(
   else if (hp - ap === hr - ar && hr !== ar) p = mult.winnerWithDiff
   else if (hp === ap && hr === ar) p = mult.correctDraw
   else if ((hp > ap && hr > ar) || (hp < ap && hr < ar)) p = mult.correctWinner
+  // Bonus +1 por acertar los goles de un equipo (no si ya es exacto)
+  if (!(hp === hr && ap === ar) && (hp === hr || ap === ar)) p += 1
   if (wildcard === "todo_o_nada") p = p > 0 ? p * 2 : -2
   return p
 }

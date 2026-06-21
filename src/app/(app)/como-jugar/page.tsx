@@ -102,6 +102,15 @@ export default async function ComoJugarPage() {
             color="bg-red-500/10 border-red-500/30 text-red-300"
           />
         </div>
+        <div className="mt-3 bg-green-500/5 border border-green-500/20 rounded-xl p-3 flex items-center gap-3">
+          <span className="text-green-400 font-black text-lg shrink-0">+1</span>
+          <p className="text-gray-300 text-sm">
+            <span className="text-white font-medium">Bonus goles de un equipo:</span>{" "}
+            {isAR
+              ? "si acertás los goles exactos de uno de los dos equipos (aunque falles el otro), sumás 1 punto extra. Ej: predijiste 2-1 y salió 2-3."
+              : "si aciertas los goles exactos de uno de los dos equipos (aunque falles el otro), sumas 1 punto extra. Ej: predijiste 2-1 y salió 2-3."}
+          </p>
+        </div>
       </Section>
 
       {/* Comodines */}

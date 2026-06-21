@@ -174,11 +174,12 @@ function evaluatePicks(
   return out
 }
 
-const MINUTE_RANGES = ["0-15", "16-30", "31-45", "46-60", "61-75", "76-90"]
-const YELLOW_RANGES = ["0-3", "4-6", "7-9", "10-12", "13-20"]
-const CORNER_RANGES = ["0-5", "6-10", "11-15", "16-20"]
-const SHOT_RANGES = ["0-10", "11-20", "21-30", "31-50"]
-const FOUL_RANGES = ["0-15", "16-25", "26-35", "36-50"]
+// Rangos angostos = más difíciles de acertar (más mérito)
+const MINUTE_RANGES = ["0-10", "11-20", "21-30", "31-45", "46-60", "61-75", "76-90"]
+const YELLOW_RANGES = ["0-1", "2-3", "4-5", "6-7", "8-15"]
+const CORNER_RANGES = ["0-6", "7-9", "10-12", "13-15", "16-25"]
+const SHOT_RANGES = ["0-15", "16-21", "22-27", "28-33", "34-60"]
+const FOUL_RANGES = ["0-15", "16-20", "21-25", "26-30", "31-50"]
 
 // ¿La liga tiene predicciones avanzadas activas (master + al menos un campo)?
 function leagueHasAdvanced(l: LeagueForPrediction): boolean {
@@ -545,6 +546,10 @@ export default function PredictionForm({
           <div className="flex items-center justify-between text-gray-400">
             <span>Solo ganador</span>
             <span className="text-green-400 font-bold">+{mult.correctWinner}</span>
+          </div>
+          <div className="flex items-center justify-between text-gray-400 col-span-2 pt-1 border-t border-white/5">
+            <span>Goles de un equipo (aunque falles el otro)</span>
+            <span className="text-green-400 font-bold">+1</span>
           </div>
         </div>
       </div>
