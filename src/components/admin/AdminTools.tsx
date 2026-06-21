@@ -22,6 +22,10 @@ export default function AdminTools() {
   const [psLoading, setPsLoading] = useState(false)
   const [psResult, setPsResult] = useState<{ predicted: string[]; missing: string[] } | null>(null)
 
+  // Estado del Bracket Challenge
+  const [bsLoading, setBsLoading] = useState(false)
+  const [bsResult, setBsResult] = useState<{ done: string[]; missing: string[] } | null>(null)
+
   // Cargar resultado manual
   const [query, setQuery] = useState("")
   const [matches, setMatches] = useState<Array<{ id: string; home_team: string; away_team: string; home_team_code: string; away_team_code: string; status: string }>>([])
@@ -89,6 +93,19 @@ export default function AdminTools() {
       // noop
     }
     setPsLoading(false)
+  }
+
+  async function loadBracketStatus() {
+    setBsLoading(true)
+    setBsResult(null)
+    try {
+      const res = await fetch(`/api/admin/bracket-status`, { method: "GET" })
+      const data = await res.json()
+      if (data.ok) setBsResult({ done: data.done, missing: data.missing })
+    } catch {
+      // noop
+    }
+    setBsLoading(false)
   }
 
   async function recalculate() {
@@ -314,6 +331,61 @@ export default function AdminTools() {
                     <span className="text-gray-600 text-xs">¡Todos predijeron! 🎉</span>
                   ) : (
                     psResult.missing.map((n) => (
+                      <span key={n} className="bg-red-500/10 text-red-300 text-xs px-2 py-1 rounded-lg">{n}</span>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Estado del Bracket Challenge */}
+      <section>
+        <div className="flex items-center gap-2 mb-3">
+          <ClipboardList size={18} className="text-purple-400" />
+          <h2 className="text-lg font-bold text-white">¿Quién hizo el Bracket?</h2>
+        </div>
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+          <p className="text-gray-500 text-xs mb-3">
+            Quién ya completó el Bracket Challenge (al menos el campeón) y a quién
+            le falta. Cierra el 24 de junio.
+          </p>
+          <button
+            onClick={loadBracketStatus}
+            disabled={bsLoading}
+            className="flex items-center gap-2 bg-purple-500 hover:bg-purple-400 disabled:opacity-50 text-black font-bold px-4 py-2.5 rounded-xl text-sm transition-colors"
+          >
+            {bsLoading ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
+            Ver estado del bracket
+          </button>
+
+          {bsResult && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+              <div className="bg-green-500/5 border border-green-500/20 rounded-xl p-3">
+                <p className="text-green-400 text-xs font-bold mb-2 uppercase tracking-wider">
+                  Ya lo hicieron ({bsResult.done.length})
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {bsResult.done.length === 0 ? (
+                    <span className="text-gray-600 text-xs">Nadie todavía</span>
+                  ) : (
+                    bsResult.done.map((n) => (
+                      <span key={n} className="bg-green-500/10 text-green-300 text-xs px-2 py-1 rounded-lg">{n}</span>
+                    ))
+                  )}
+                </div>
+              </div>
+              <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-3">
+                <p className="text-red-400 text-xs font-bold mb-2 uppercase tracking-wider">
+                  Faltan ({bsResult.missing.length})
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {bsResult.missing.length === 0 ? (
+                    <span className="text-gray-600 text-xs">¡Todos lo hicieron! 🎉</span>
+                  ) : (
+                    bsResult.missing.map((n) => (
                       <span key={n} className="bg-red-500/10 text-red-300 text-xs px-2 py-1 rounded-lg">{n}</span>
                     ))
                   )}
