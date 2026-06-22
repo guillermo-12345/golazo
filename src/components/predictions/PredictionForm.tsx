@@ -29,6 +29,7 @@ type LeagueForPrediction = {
       possession?: boolean
       totalShots?: boolean
       totalFouls?: boolean
+      penalty?: boolean
     }
     multipliers?: {
       exactScore: number
@@ -51,6 +52,7 @@ type AdvancedPicks = {
   morePossession?: "home" | "away"
   totalShots?: string
   totalFouls?: string
+  anyPenalty?: "yes" | "no"
 }
 
 type ExistingPred = {
@@ -83,6 +85,7 @@ function describePicks(picks: AdvancedPicks, homeCode: string, awayCode: string)
   if (picks.morePossession) out.push({ label: "Más posesión", value: side(picks.morePossession) })
   if (picks.totalShots) out.push({ label: "Tiros", value: picks.totalShots })
   if (picks.totalFouls) out.push({ label: "Faltas", value: picks.totalFouls })
+  if (picks.anyPenalty) out.push({ label: "¿Penal?", value: picks.anyPenalty === "yes" ? "Sí" : "No" })
   return out
 }
 
@@ -171,6 +174,13 @@ function evaluatePicks(
     const hit = inRange(picks.totalFouls, t)
     out.push({ label: "Faltas", mine: picks.totalFouls, result: t != null ? String(t) : "—", points: hit ? ADVANCED_POINTS.totalFouls : 0, hit })
   }
+  if (picks.anyPenalty) {
+    const t = pair("penalties")
+    const realYes = (t ?? 0) > 0
+    const hit = (picks.anyPenalty === "yes") === realYes
+    const pts = hit ? (picks.anyPenalty === "yes" ? ADVANCED_POINTS.penaltyYes : ADVANCED_POINTS.penaltyNo) : 0
+    out.push({ label: "¿Penal?", mine: picks.anyPenalty === "yes" ? "Sí" : "No", result: realYes ? "Sí" : "No", points: pts, hit })
+  }
   return out
 }
 
@@ -179,7 +189,9 @@ const MINUTE_RANGES = ["0-10", "11-20", "21-30", "31-45", "46-60", "61-75", "76-
 const YELLOW_RANGES = ["0-1", "2-3", "4-5", "6-7", "8-15"]
 const CORNER_RANGES = ["0-6", "7-9", "10-12", "13-15", "16-25"]
 const SHOT_RANGES = ["0-15", "16-21", "22-27", "28-33", "34-60"]
-const FOUL_RANGES = ["0-15", "16-20", "21-25", "26-30", "31-50"]
+// Total de faltas (ambos equipos): un partido típico tiene ~18-30, por eso
+// centramos los buckets ahí (los extremos son catch-all de partidos raros).
+const FOUL_RANGES = ["0-17", "18-21", "22-25", "26-29", "30-50"]
 
 // ¿La liga tiene predicciones avanzadas activas (master + al menos un campo)?
 function leagueHasAdvanced(l: LeagueForPrediction): boolean {
@@ -188,7 +200,7 @@ function leagueHasAdvanced(l: LeagueForPrediction): boolean {
     a?.enabled &&
     (a.firstScorer || a.firstTeamToScore || a.goalMinute || a.halftimeResult ||
       a.yellowCards || a.redCards || a.corners || a.possession ||
-      a.totalShots || a.totalFouls)
+      a.totalShots || a.totalFouls || a.penalty)
   )
 }
 
@@ -267,6 +279,7 @@ export default function PredictionForm({
       morePossession: a.possession,
       totalShots: a.totalShots,
       totalFouls: a.totalFouls,
+      anyPenalty: a.penalty,
     }
     const out: AdvancedPicks = {}
     for (const key of Object.keys(picks) as Array<keyof AdvancedPicks>) {
@@ -749,6 +762,23 @@ export default function PredictionForm({
                     options={FOUL_RANGES.map((r) => ({ value: r, label: r }))}
                     selected={picks.totalFouls}
                     onChange={(v) => updatePick("totalFouls", v)}
+                  />
+                </AdvancedRow>
+              )}
+
+              {/* ¿Hubo penal? */}
+              {adv.penalty && (
+                <AdvancedRow
+                  label="¿Hubo penal en el partido?"
+                  ptsLabel={`Sí +${ADVANCED_POINTS.penaltyYes} · No +${ADVANCED_POINTS.penaltyNo}`}
+                >
+                  <PickRow
+                    options={[
+                      { value: "yes", label: `Sí (+${ADVANCED_POINTS.penaltyYes})` },
+                      { value: "no", label: `No (+${ADVANCED_POINTS.penaltyNo})` },
+                    ]}
+                    selected={picks.anyPenalty}
+                    onChange={(v) => updatePick("anyPenalty", v as "yes" | "no")}
                   />
                 </AdvancedRow>
               )}

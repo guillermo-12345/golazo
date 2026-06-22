@@ -93,6 +93,7 @@ function buildExtraData(m: DbMatch, ev: EspnEvent, det: EspnMatchDetails): Recor
     extra.possession = { home: side.home.possession, away: side.away.possession }
     extra.totalShots = { home: side.home.totalShots, away: side.away.totalShots }
     extra.fouls = { home: side.home.fouls, away: side.away.fouls }
+    extra.penalties = { home: side.home.penaltyShots, away: side.away.penaltyShots }
 
     const statRow = (name: string, s: EspnTeamStats) => ({
       team: { name },

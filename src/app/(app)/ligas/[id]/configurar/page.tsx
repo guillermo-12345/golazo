@@ -35,7 +35,7 @@ const BANNER_COLORS = [
 ]
 
 type LeagueConfig = {
-  advancedOptions?: { enabled?: boolean; firstScorer?: boolean; goalMinute?: boolean; yellowCards?: boolean; redCards?: boolean; corners?: boolean; firstTeamToScore?: boolean; halftimeResult?: boolean }
+  advancedOptions?: { enabled?: boolean; firstScorer?: boolean; goalMinute?: boolean; yellowCards?: boolean; redCards?: boolean; corners?: boolean; firstTeamToScore?: boolean; halftimeResult?: boolean; possession?: boolean; totalShots?: boolean; totalFouls?: boolean; penalty?: boolean }
   multipliers?: { exactScore: number; correctWinner: number; correctDraw: number; winnerWithDiff: number }
   allowWildcards?: boolean
   allowBracketChallenge?: boolean
@@ -74,6 +74,7 @@ export default function ConfigurarLigaPage({
     possession: false,
     totalShots: false,
     totalFouls: false,
+    penalty: false,
   })
 
   // Password
@@ -151,6 +152,7 @@ export default function ConfigurarLigaPage({
           possession: adv.possession ?? false,
           totalShots: adv.totalShots ?? false,
           totalFouls: adv.totalFouls ?? false,
+          penalty: adv.penalty ?? false,
         })
       }
       setAllowWildcards(
@@ -504,6 +506,7 @@ export default function ConfigurarLigaPage({
                 { key: "possession", label: "Equipo con más posesión", mult: "x2" },
                 { key: "totalShots", label: "Total de tiros", mult: "x2" },
                 { key: "totalFouls", label: "Total de faltas", mult: "x2" },
+                { key: "penalty", label: "¿Hubo penal en el partido?", mult: "Sí+3/No+1" },
               ].map((opt) => (
                 <label
                   key={opt.key}

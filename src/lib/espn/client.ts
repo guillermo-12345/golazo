@@ -228,6 +228,8 @@ export type EspnTeamStats = {
   offsides: number
   /** % entero de pases acertados */
   passPct: number
+  /** Penales pateados por el equipo (para "¿hubo penal?") */
+  penaltyShots: number
 }
 
 export type EspnKeyEvent = {
@@ -369,6 +371,7 @@ export async function getEspnMatchDetails(eventId: string): Promise<EspnMatchDet
         saves: Math.round(toNum(byName.saves)),
         offsides: Math.round(toNum(byName.offsides)),
         passPct: Math.round(toNum(byName.passPct) * 100),
+        penaltyShots: Math.round(toNum(byName.penaltyKickShots)),
       }
     }
     const homeBox = boxTeams.find(

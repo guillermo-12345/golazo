@@ -370,6 +370,7 @@ export type LeagueConfig = {
     possession: boolean
     totalShots: boolean
     totalFouls: boolean
+    penalty: boolean
   }
   multipliers: {
     exactScore: number
@@ -392,6 +393,7 @@ export type AdvancedPicks = {
   morePossession?: "home" | "away"
   totalShots?: string  // "10-19", "20-29", ...
   totalFouls?: string  // "10-19", "20-29", ...
+  anyPenalty?: "yes" | "no"
 }
 
 export type WildcardType = "todo_o_nada" | "escudo" | "ladron"

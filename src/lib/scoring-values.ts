@@ -39,6 +39,10 @@ export const ADVANCED_POINTS = {
   redCardNo: 1,
   /** Equipo con más posesión (~48%) */
   possession: 1,
+  /** Hubo penal en el partido: SÍ (~30%) */
+  penaltyYes: 3,
+  /** Hubo penal en el partido: NO (~70%) */
+  penaltyNo: 1,
 } as const
 
 /** Desafío diario por niveles (SQL: migración 017 — mantener en sync). */

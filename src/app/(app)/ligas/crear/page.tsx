@@ -58,6 +58,7 @@ export default function CrearLigaPage() {
     possession: false,
     totalShots: false,
     totalFouls: false,
+    penalty: false,
   })
 
   const {
@@ -391,6 +392,7 @@ export default function CrearLigaPage() {
                 { key: "possession", label: "Equipo con más posesión", mult: "x2" },
                 { key: "totalShots", label: "Total de tiros", mult: "x2" },
                 { key: "totalFouls", label: "Total de faltas", mult: "x2" },
+                { key: "penalty", label: "¿Hubo penal en el partido?", mult: "Sí+3/No+1" },
               ].map((opt) => (
                 <label
                   key={opt.key}
