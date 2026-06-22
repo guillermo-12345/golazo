@@ -11,6 +11,7 @@ import LocalDateTime from "@/components/LocalDateTime"
 import DailyChallenge from "@/components/DailyChallenge"
 import WelcomeBanner from "@/components/WelcomeBanner"
 import LiveMatchBanner from "@/components/LiveMatchBanner"
+import BracketCountdownBanner from "@/components/BracketCountdownBanner"
 import { Crown, Star } from "lucide-react"
 import { getLocale } from "@/lib/get-locale"
 import { PREDICTION_LOCK_MINUTES } from "@/lib/predictions"
@@ -167,6 +168,9 @@ export default async function DashboardPage() {
 
       {/* En vivo o último partido, siempre a mano */}
       <LiveMatchBanner />
+
+      {/* Aviso: Bracket Challenge por cerrar (cuenta regresiva) */}
+      <BracketCountdownBanner />
 
       {/* Banner de bienvenida — se muestra una sola vez */}
       <WelcomeBanner displayName={profile?.display_name ?? ""} />
