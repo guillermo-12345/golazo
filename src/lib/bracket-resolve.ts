@@ -53,9 +53,14 @@ P_TO_FIXTURE[103] = 99290
 P_TO_FIXTURE[104] = 99299
 
 type TeamRow = { code: string; name: string; pts: number; gd: number; gf: number }
+type GroupStanding = { rows: TeamRow[]; complete: boolean }
 
-/** Tabla de posiciones por grupo, ordenada (pts → dif. gol → goles a favor). */
-function computeStandings(matches: BracketMatch[]): Map<string, TeamRow[]> {
+/**
+ * Posiciones por grupo con las reglas FIFA simplificadas (pts → dif. gol →
+ * goles a favor). Incluye grupos incompletos (con `complete: false`) para
+ * poder proyectar el cuadro en vivo.
+ */
+function computeStandingsAll(matches: BracketMatch[]): Map<string, GroupStanding> {
   const groups = new Map<string, Map<string, TeamRow>>()
   const finishedByGroup = new Map<string, number>()
 
@@ -87,14 +92,22 @@ function computeStandings(matches: BracketMatch[]): Map<string, TeamRow[]> {
     }
   }
 
-  const standings = new Map<string, TeamRow[]>()
+  const out = new Map<string, GroupStanding>()
   for (const [g, table] of groups) {
-    // Un grupo de 4 equipos juega 6 partidos: solo resolvemos si terminó
-    if ((finishedByGroup.get(g) ?? 0) < 6) continue
     const rows = [...table.values()].sort(
       (a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf
     )
-    standings.set(g, rows)
+    // Un grupo de 4 equipos juega 6 partidos
+    out.set(g, { rows, complete: (finishedByGroup.get(g) ?? 0) >= 6 })
+  }
+  return out
+}
+
+/** Solo grupos terminados (para escribir equipos definitivos en la DB). */
+function computeStandings(matches: BracketMatch[]): Map<string, TeamRow[]> {
+  const standings = new Map<string, TeamRow[]>()
+  for (const [g, s] of computeStandingsAll(matches)) {
+    if (s.complete) standings.set(g, s.rows)
   }
   return standings
 }
@@ -166,4 +179,62 @@ export function computeBracketUpdates(matches: BracketMatch[]): BracketUpdate[] 
     })
   }
   return updates
+}
+
+// ─────────────────────────────────────────────
+// Proyección en vivo del cuadro (visualización, no escribe en la DB)
+// ─────────────────────────────────────────────
+
+export type SlotProjection = {
+  code: string
+  name: string
+  /** true = aún puede cambiar (el grupo no terminó / posición no asegurada) */
+  provisional: boolean
+}
+
+/** Resuelve una ref de slot contra las posiciones ACTUALES (aunque el grupo siga). */
+function projectRef(
+  ref: string,
+  standings: Map<string, GroupStanding>,
+  byFixture: Map<number, BracketMatch>
+): SlotProjection | null {
+  // Ganador/Perdedor de partido ya jugado → definitivo
+  const pm = ref.match(/^([WL])P(\d+)$/)
+  if (pm) {
+    const fill = matchOutcome(byFixture.get(P_TO_FIXTURE[parseInt(pm[2], 10)]), pm[1] as "W" | "L")
+    return fill ? { ...fill, provisional: false } : null
+  }
+  // 1º/2º de grupo según la tabla actual
+  const gm = ref.match(/^([12])([A-L])$/)
+  if (gm) {
+    const pos = parseInt(gm[1], 10) - 1
+    const s = standings.get(gm[2])
+    if (!s || !s.rows[pos]) return null
+    return { code: s.rows[pos].code, name: s.rows[pos].name, provisional: !s.complete }
+  }
+  // Mejores terceros: se proyectan recién al cerrar la fase (quedan con etiqueta)
+  return null
+}
+
+/**
+ * Para cada partido de knockout, proyecta quién iría según cómo van los grupos
+ * AHORA. No escribe nada: la página lo usa para mostrar el cuadro en vivo.
+ */
+export function projectBracket(
+  matches: BracketMatch[]
+): Map<number, { home: SlotProjection | null; away: SlotProjection | null }> {
+  const standings = computeStandingsAll(matches)
+  const byFixture = new Map(matches.map((m) => [m.api_fixture_id, m]))
+  const out = new Map<number, { home: SlotProjection | null; away: SlotProjection | null }>()
+
+  for (const m of matches) {
+    if (m.stage === "group_stage") continue
+    const refs = m.extra_data?.bracket
+    if (!refs) continue
+    out.set(m.api_fixture_id, {
+      home: projectRef(refs.h, standings, byFixture),
+      away: projectRef(refs.a, standings, byFixture),
+    })
+  }
+  return out
 }
