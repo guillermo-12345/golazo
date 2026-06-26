@@ -94,16 +94,19 @@ export default async function PartidoDetailPage({
     otherWildcardsByLeague[row.league_id] = (otherWildcardsByLeague[row.league_id] ?? 0) + 1
   }
 
-  // Siguiente partido aún abierto (para el botón "predecir el siguiente")
+  // Siguiente partido aún abierto. Orden total (hora, api_fixture_id) para que
+  // los partidos a la MISMA hora no se salteen y la navegación no entre en bucle.
   const lockThreshold = new Date(Date.now() + PREDICTION_LOCK_MINUTES * 60 * 1000).toISOString()
   const { data: nextMatchData } = await supabase
     .from("matches")
     .select("id")
     .eq("status", "scheduled")
-    .gt("scheduled_at", match.scheduled_at)
     .gt("scheduled_at", lockThreshold)
-    .neq("id", id)
+    .or(
+      `scheduled_at.gt.${match.scheduled_at},and(scheduled_at.eq.${match.scheduled_at},api_fixture_id.gt.${match.api_fixture_id})`
+    )
     .order("scheduled_at", { ascending: true })
+    .order("api_fixture_id", { ascending: true })
     .limit(1)
     .maybeSingle()
   const nextMatchId = (nextMatchData as { id: string } | null)?.id ?? null

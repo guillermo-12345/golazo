@@ -122,6 +122,19 @@ export default async function DashboardPage() {
   // Posición en la Liga Global (la oficial donde están todos)
   const globalMembership = myLeagues.find((m) => m.leagues?.type === "global")
 
+  // Posición en la liga FAVORITA (si marcó una privada/pública como favorita)
+  const favoriteMembership = myLeagues.find(
+    (m) => m.is_favorite && m.leagues && m.leagues.type !== "global"
+  )
+  let favoriteMembersCount = 0
+  if (favoriteMembership) {
+    const { count } = await supabase
+      .from("league_members")
+      .select("user_id", { count: "exact", head: true })
+      .eq("league_id", favoriteMembership.league_id)
+    favoriteMembersCount = count ?? 0
+  }
+
   // Calcular stats personales
   const predictions = (predictionsRes.data ?? []) as Array<{
     points_earned: number | null
@@ -235,6 +248,36 @@ export default async function DashboardPage() {
           </div>
           <div className="text-right shrink-0">
             <p className="text-2xl font-black text-yellow-400">{globalMembership.points}</p>
+            <p className="text-xs text-gray-500">puntos</p>
+          </div>
+          <ChevronRight size={20} className="text-gray-600 group-hover:translate-x-0.5 transition-transform shrink-0" />
+        </Link>
+      )}
+
+      {/* Tu posición en tu liga favorita */}
+      {favoriteMembership && favoriteMembership.leagues && (
+        <Link
+          href={`/ligas/${favoriteMembership.league_id}`}
+          className="flex items-center gap-4 bg-gradient-to-r from-green-500/12 via-green-500/5 to-transparent border border-green-500/30 hover:border-green-500/50 rounded-2xl p-5 mb-6 transition-colors group"
+        >
+          <div className="w-12 h-12 rounded-xl bg-green-500/20 border border-green-500/40 flex items-center justify-center shrink-0">
+            <Star size={22} className="fill-green-400 text-green-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold text-green-500/80 uppercase tracking-wider mb-0.5 truncate">
+              Tu posición · {favoriteMembership.leagues.name}
+            </p>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-black text-white">
+                {favoriteMembership.rank ? `#${favoriteMembership.rank}` : "—"}
+              </span>
+              {favoriteMembersCount > 0 && (
+                <span className="text-gray-500 text-sm">de {favoriteMembersCount}</span>
+              )}
+            </div>
+          </div>
+          <div className="text-right shrink-0">
+            <p className="text-2xl font-black text-green-400">{favoriteMembership.points}</p>
             <p className="text-xs text-gray-500">puntos</p>
           </div>
           <ChevronRight size={20} className="text-gray-600 group-hover:translate-x-0.5 transition-transform shrink-0" />

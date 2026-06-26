@@ -290,14 +290,14 @@ export default function PredictionForm({
     return out
   }
 
-  async function handleSave() {
+  async function handleSave(): Promise<boolean> {
     setSaving(true)
     setSaveError(null)
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       setSaving(false)
-      return
+      return false
     }
 
     const targetLeagues = applyAll && leagues.length > 1 ? leagues : [selectedLeague]
@@ -317,11 +317,13 @@ export default function PredictionForm({
       .from("predictions")
       .upsert(rows, { onConflict: "user_id,match_id,league_id" })
 
+    let ok = false
     if (!error) {
       setSavedCount(targetLeagues.length)
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
       router.refresh()
+      ok = true
     } else if (error.code === "42501") {
       // RLS rechazó la escritura: el corte de 65 min ya pasó
       setSaveError(
@@ -332,6 +334,13 @@ export default function PredictionForm({
       setSaveError("No se pudo guardar la predicción. Intentá de nuevo.")
     }
     setSaving(false)
+    return ok
+  }
+
+  // "Siguiente": guarda lo que se haya puesto y recién ahí navega
+  async function handleSaveAndNext() {
+    const ok = await handleSave()
+    if (ok && nextMatchId) router.push(`/partidos/${nextMatchId}`)
   }
 
   const handleLeagueChange = (leagueId: string) => {
@@ -829,20 +838,22 @@ export default function PredictionForm({
         </div>
       )}
 
-      {/* Predecir el siguiente partido — sin volver a la lista */}
+      {/* Guarda lo que pusiste y pasa al siguiente partido (no se pierde nada) */}
       {nextMatchId && (
-        <Link
-          href={`/partidos/${nextMatchId}`}
+        <button
+          onClick={handleSaveAndNext}
+          disabled={saving}
           className={cn(
-            "flex items-center justify-center gap-2 w-full font-bold py-3.5 rounded-xl transition-colors",
+            "flex items-center justify-center gap-2 w-full font-bold py-3.5 rounded-xl transition-colors disabled:opacity-60",
             saved
               ? "bg-green-500/15 border border-green-500/40 text-green-300"
               : "bg-white/5 border border-white/10 text-gray-300 hover:border-white/20"
           )}
         >
-          Predecir el siguiente partido
+          {saving ? <Loader2 size={16} className="animate-spin" /> : null}
+          Guardar y predecir el siguiente
           <ArrowRight size={16} />
-        </Link>
+        </button>
       )}
     </div>
   )
