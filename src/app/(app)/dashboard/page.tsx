@@ -188,29 +188,43 @@ export default async function DashboardPage() {
       {/* Banner de bienvenida — se muestra una sola vez */}
       <WelcomeBanner displayName={profile?.display_name ?? ""} />
 
-      {/* CTA Predecir — acción principal, lo primero que se ve */}
+      {/* CTA Predecir — lista de pendientes (muestra los simultáneos, no se saltea ninguno) */}
       {nextToPredict ? (
-        <Link
-          href={`/partidos/${nextToPredict.id}`}
-          className="flex items-center gap-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500 rounded-2xl p-5 mb-6 transition-colors group shadow-lg shadow-green-500/20"
-        >
-          <div className="w-12 h-12 rounded-xl bg-black/20 flex items-center justify-center shrink-0">
-            <Zap size={24} className="text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-black font-black text-base">
+        <div className="bg-gradient-to-br from-green-500/15 to-green-600/5 border border-green-500/30 rounded-2xl p-4 mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Zap size={18} className="text-green-400" />
+            <p className="text-white font-black text-sm">
               {pendingCount === 1
                 ? "Te falta 1 partido por predecir"
                 : `Te faltan ${pendingCount} partidos por predecir`}
             </p>
-            <p className="text-black/70 text-sm font-medium truncate">
-              Próximo: {nextToPredict.home_team} vs {nextToPredict.away_team}
-            </p>
           </div>
-          <span className="shrink-0 bg-black/20 text-black font-black text-sm px-4 py-2 rounded-xl group-hover:translate-x-0.5 transition-transform">
-            Predecir →
-          </span>
-        </Link>
+          <div className="space-y-1.5">
+            {pendingMatches.slice(0, 4).map((m) => (
+              <Link
+                key={m.id}
+                href={`/partidos/${m.id}`}
+                className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl px-3 py-2 transition-colors group"
+              >
+                <TeamFlag code={m.home_team_code} size={20} />
+                <span className="text-gray-300 text-xs">vs</span>
+                <TeamFlag code={m.away_team_code} size={20} />
+                <span className="text-white text-xs font-medium flex-1 truncate">
+                  {m.home_team_code} - {m.away_team_code}
+                </span>
+                <LocalDateTime date={m.scheduled_at} formatStr="d MMM · HH:mm" className="text-gray-500 text-[10px] shrink-0" />
+                <span className="shrink-0 text-green-400 text-xs font-bold group-hover:translate-x-0.5 transition-transform">
+                  Predecir →
+                </span>
+              </Link>
+            ))}
+          </div>
+          {pendingCount > 4 && (
+            <Link href="/partidos" className="block text-center text-green-400 hover:text-green-300 text-xs font-medium mt-2.5">
+              Ver los {pendingCount - 4} restantes →
+            </Link>
+          )}
+        </div>
       ) : (
         <Link
           href="/partidos"
