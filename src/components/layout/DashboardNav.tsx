@@ -33,7 +33,7 @@ const NAV_ITEMS = [
 const MOBILE_NAV_ITEMS = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Inicio" },
   { href: "/calendario", icon: CalendarDays, label: "Calendario" },
-  { href: "/grupos", icon: Grid3X3, label: "Grupos" },
+  { href: "/llaves", icon: Swords, label: "Llaves" },
   { href: "/ligas", icon: Trophy, label: "Ligas" },
   { href: "/perfil", icon: User, label: "Perfil" },
 ]
