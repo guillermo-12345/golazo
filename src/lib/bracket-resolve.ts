@@ -43,7 +43,7 @@ export type BracketUpdate = {
 }
 
 // Número de partido (P73...) → api_fixture_id de la tabla matches
-const P_TO_FIXTURE: Record<number, number> = {}
+export const P_TO_FIXTURE: Record<number, number> = {}
 for (let i = 0; i <= 15; i++) P_TO_FIXTURE[73 + i] = 99201 + i
 for (let i = 0; i <= 7; i++) P_TO_FIXTURE[89 + i] = 99251 + i
 for (let i = 0; i <= 3; i++) P_TO_FIXTURE[97 + i] = 99271 + i
