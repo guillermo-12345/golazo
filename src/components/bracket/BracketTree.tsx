@@ -27,8 +27,8 @@ export default function BracketTree({ rounds }: { rounds: RoundView[] }) {
   return (
     <div className="bk-scroll">
       <div className="bk">
-        {rounds.map((r) => (
-          <div className="bk-round" key={r.stage}>
+        {rounds.map((r, i) => (
+          <div className="bk-round" data-level={i} key={r.stage}>
             <div className={`bk-round-title ${r.color}`}>{r.label}</div>
             <div className="bk-body">
               {r.matches.map((m) => (

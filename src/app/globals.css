@@ -140,31 +140,41 @@ body {
   background-color: #f1f3f5;
 }
 
-/* ===== Cuadro de eliminatorias (bracket tree) ===== */
-:root { --bk-line: rgba(255,255,255,0.16); }
-.light { --bk-line: rgba(0,0,0,0.15); }
+/* ===== Cuadro de eliminatorias (bracket tree) =====
+   Alturas FIJAS por ronda: cada ronda dobla la altura de celda, así cada
+   cruce queda centrado entre sus dos alimentadores. Alineación garantizada
+   sin depender del alto del contenido (tarjetas de penales, etc.). */
+:root { --bk-line: rgba(255,255,255,0.18); --bk-unit: 70px; --bk-gap: 26px; }
+.light { --bk-line: rgba(0,0,0,0.16); }
 
 .bk-scroll { overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; padding-bottom: 14px; }
-.bk { display: flex; align-items: stretch; min-width: max-content; }
-.bk-round { display: flex; flex-direction: column; width: 164px; flex: 0 0 164px; }
-.bk-round + .bk-round { margin-left: 22px; }
-.bk-round-title { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .09em; padding: 0 2px 10px; }
-.bk-body { display: flex; flex-direction: column; flex: 1; justify-content: space-around; }
-.bk-cell { flex: 1 0 auto; display: flex; align-items: center; position: relative; min-height: 56px; }
+.bk { display: flex; align-items: flex-start; min-width: max-content; }
+.bk-round { display: flex; flex-direction: column; width: 152px; flex: 0 0 152px; }
+.bk-round + .bk-round { margin-left: var(--bk-gap); }
+.bk-round-title { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .09em; padding: 0 2px 8px; }
+.bk-cell { display: flex; align-items: center; position: relative; }
+
+/* cada nivel dobla la altura → la tarjeta queda centrada frente a su par */
+.bk-round[data-level="0"] .bk-cell { height: var(--bk-unit); }
+.bk-round[data-level="1"] .bk-cell { height: calc(var(--bk-unit) * 2); }
+.bk-round[data-level="2"] .bk-cell { height: calc(var(--bk-unit) * 4); }
+.bk-round[data-level="3"] .bk-cell { height: calc(var(--bk-unit) * 8); }
+.bk-round[data-level="4"] .bk-cell { height: calc(var(--bk-unit) * 16); }
 
 /* stub horizontal entrante (rondas posteriores a la primera) */
 .bk-round:not(:first-child) .bk-cell::before {
-  content: ""; position: absolute; left: -22px; top: 50%;
-  width: 22px; height: 2px; background: var(--bk-line);
+  content: ""; position: absolute; left: calc(var(--bk-gap) * -1); top: 50%;
+  width: var(--bk-gap); height: 2px; background: var(--bk-line);
 }
-/* elbow saliente (rondas con siguiente): horizontal + vertical que une el par */
+/* elbow saliente: horizontal desde el centro + vertical (medio alto) hasta
+   el punto medio del par, donde conecta la celda de la ronda siguiente */
 .bk-round:not(:last-child) .bk-cell::after {
-  content: ""; position: absolute; right: -22px; width: 22px;
+  content: ""; position: absolute; right: calc(var(--bk-gap) * -1); width: var(--bk-gap);
   border-right: 2px solid var(--bk-line);
 }
 .bk-round:not(:last-child) .bk-cell:nth-child(odd)::after {
-  top: 50%; height: 100%; border-top: 2px solid var(--bk-line);
+  top: 50%; height: 50%; border-top: 2px solid var(--bk-line);
 }
 .bk-round:not(:last-child) .bk-cell:nth-child(even)::after {
-  bottom: 50%; height: 100%; border-bottom: 2px solid var(--bk-line);
+  bottom: 50%; height: 50%; border-bottom: 2px solid var(--bk-line);
 }
