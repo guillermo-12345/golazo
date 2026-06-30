@@ -31,14 +31,16 @@ select pg_temp.setref(99213,'1B','3:EFGIJ');
 select pg_temp.setref(99214,'1J','2H');
 select pg_temp.setref(99215,'1K','3:DEIJL');
 select pg_temp.setref(99216,'2D','2G');
-select pg_temp.setref(99251,'WP73','WP75');
-select pg_temp.setref(99252,'WP74','WP76');
-select pg_temp.setref(99253,'WP77','WP78');
-select pg_temp.setref(99254,'WP79','WP80');
-select pg_temp.setref(99255,'WP81','WP82');
-select pg_temp.setref(99256,'WP83','WP84');
-select pg_temp.setref(99257,'WP85','WP86');
-select pg_temp.setref(99258,'WP87','WP88');
+-- Octavos: pares adyacentes del cuadro oficial 2026 (cada octavo une dos
+-- 16avos vecinos en el orden del cuadro, no cruza mitades).
+select pg_temp.setref(99251,'WP74','WP77');
+select pg_temp.setref(99252,'WP73','WP75');
+select pg_temp.setref(99253,'WP83','WP84');
+select pg_temp.setref(99254,'WP81','WP82');
+select pg_temp.setref(99255,'WP76','WP78');
+select pg_temp.setref(99256,'WP79','WP80');
+select pg_temp.setref(99257,'WP86','WP88');
+select pg_temp.setref(99258,'WP85','WP87');
 select pg_temp.setref(99271,'WP89','WP90');
 select pg_temp.setref(99272,'WP91','WP92');
 select pg_temp.setref(99273,'WP93','WP94');

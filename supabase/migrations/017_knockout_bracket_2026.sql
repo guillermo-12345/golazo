@@ -32,14 +32,14 @@ update public.matches set home_team='1º Grupo K', away_team='3º (D/E/I/J/L)', 
 update public.matches set home_team='2º Grupo D', away_team='2º Grupo G', home_team_code='TBD', away_team_code='TBD', scheduled_at='2026-07-03T23:00:00+00' where api_fixture_id=99216;
 
 -- ---- Octavos (Round of 16) — ganadores de R32 ----
-update public.matches set home_team='Ganador P73', away_team='Ganador P75', home_team_code='TBD', away_team_code='TBD', scheduled_at='2026-07-04T20:00:00+00' where api_fixture_id=99251;
-update public.matches set home_team='Ganador P74', away_team='Ganador P76', home_team_code='TBD', away_team_code='TBD', scheduled_at='2026-07-04T23:00:00+00' where api_fixture_id=99252;
-update public.matches set home_team='Ganador P77', away_team='Ganador P78', home_team_code='TBD', away_team_code='TBD', scheduled_at='2026-07-05T20:00:00+00' where api_fixture_id=99253;
-update public.matches set home_team='Ganador P79', away_team='Ganador P80', home_team_code='TBD', away_team_code='TBD', scheduled_at='2026-07-05T23:00:00+00' where api_fixture_id=99254;
-update public.matches set home_team='Ganador P81', away_team='Ganador P82', home_team_code='TBD', away_team_code='TBD', scheduled_at='2026-07-06T20:00:00+00' where api_fixture_id=99255;
-update public.matches set home_team='Ganador P83', away_team='Ganador P84', home_team_code='TBD', away_team_code='TBD', scheduled_at='2026-07-06T23:00:00+00' where api_fixture_id=99256;
-update public.matches set home_team='Ganador P85', away_team='Ganador P86', home_team_code='TBD', away_team_code='TBD', scheduled_at='2026-07-07T20:00:00+00' where api_fixture_id=99257;
-update public.matches set home_team='Ganador P87', away_team='Ganador P88', home_team_code='TBD', away_team_code='TBD', scheduled_at='2026-07-07T23:00:00+00' where api_fixture_id=99258;
+update public.matches set home_team='Ganador P74', away_team='Ganador P77', home_team_code='TBD', away_team_code='TBD', scheduled_at='2026-07-04T20:00:00+00' where api_fixture_id=99251;
+update public.matches set home_team='Ganador P73', away_team='Ganador P75', home_team_code='TBD', away_team_code='TBD', scheduled_at='2026-07-04T23:00:00+00' where api_fixture_id=99252;
+update public.matches set home_team='Ganador P83', away_team='Ganador P84', home_team_code='TBD', away_team_code='TBD', scheduled_at='2026-07-05T20:00:00+00' where api_fixture_id=99253;
+update public.matches set home_team='Ganador P81', away_team='Ganador P82', home_team_code='TBD', away_team_code='TBD', scheduled_at='2026-07-05T23:00:00+00' where api_fixture_id=99254;
+update public.matches set home_team='Ganador P76', away_team='Ganador P78', home_team_code='TBD', away_team_code='TBD', scheduled_at='2026-07-06T20:00:00+00' where api_fixture_id=99255;
+update public.matches set home_team='Ganador P79', away_team='Ganador P80', home_team_code='TBD', away_team_code='TBD', scheduled_at='2026-07-06T23:00:00+00' where api_fixture_id=99256;
+update public.matches set home_team='Ganador P86', away_team='Ganador P88', home_team_code='TBD', away_team_code='TBD', scheduled_at='2026-07-07T20:00:00+00' where api_fixture_id=99257;
+update public.matches set home_team='Ganador P85', away_team='Ganador P87', home_team_code='TBD', away_team_code='TBD', scheduled_at='2026-07-07T23:00:00+00' where api_fixture_id=99258;
 
 -- ---- Cuartos ----
 update public.matches set home_team='Ganador P89', away_team='Ganador P90', home_team_code='TBD', away_team_code='TBD', scheduled_at='2026-07-09T20:00:00+00' where api_fixture_id=99271;
