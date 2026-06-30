@@ -123,6 +123,20 @@ export default async function PartidoDetailPage({
       Date.now() >= kickoff - 5 * 60 * 1000 &&
       Date.now() <= kickoff + 150 * 60 * 1000)
 
+  // Definición por alargue/penales (eliminatorias)
+  const ko = match.extra_data as {
+    shootout?: { home: number; away: number }
+    outcomeType?: string
+    winner?: string
+  } | null
+  const koNote =
+    match.status === "finished" && ko?.outcomeType === "penalties"
+      ? `Definido por penales ${ko.shootout?.home ?? 0}-${ko.shootout?.away ?? 0}`
+      : match.status === "finished" && ko?.outcomeType === "et"
+      ? "Definido en el alargue"
+      : null
+  const koWinner = ko?.winner === "home" ? match.home_team : ko?.winner === "away" ? match.away_team : null
+
   return (
     <main className="max-w-2xl mx-auto px-4 md:px-8 py-8">
       <LiveSyncTrigger active={liveWindow} />
@@ -150,6 +164,14 @@ export default async function PartidoDetailPage({
         </div>
         <LiveScore initialMatch={match} />
         <LiveMatchScoreboard initialMatch={match} />
+        {koNote && (
+          <div className="text-center mt-3">
+            <span className="inline-block text-[11px] font-bold text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-full px-3 py-1">
+              {koNote}
+              {koWinner && <> · ganó {koWinner}</>}
+            </span>
+          </div>
+        )}
         <div className="flex items-center justify-center gap-4 mt-4 text-xs text-gray-500 flex-wrap">
           <span className="flex items-center gap-1">
             <Clock size={12} />

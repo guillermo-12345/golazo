@@ -25,6 +25,12 @@ export type EspnEvent = {
   awayScore: number
   /** Minuto estimado de juego (solo si está en vivo) */
   minute: number | null
+  /** Ganador real según ESPN (contempla alargue y penales). null si empate/no def. */
+  winner: "home" | "away" | null
+  /** Penales (shootout) si se definió por penales; null si no hubo. */
+  shootout: { home: number; away: number } | null
+  /** Detalle del estado: FT, AET (alargue), Pens, etc. */
+  statusDetail: string | null
 }
 
 // Nombre ESPN normalizado -> code FIFA de los 48 clasificados.
@@ -72,12 +78,14 @@ type EspnScoreboard = {
     competitions: Array<{
       status: {
         displayClock?: string
-        type: { state: string; completed: boolean }
+        type: { state: string; completed: boolean; detail?: string; shortDetail?: string }
       }
       venue?: { fullName?: string; address?: { city?: string } }
       competitors: Array<{
         homeAway: "home" | "away"
         score?: string
+        winner?: boolean
+        shootoutScore?: string | number
         team: { displayName: string }
       }>
     }>
@@ -120,6 +128,17 @@ export async function getEspnEventsForDate(yyyymmdd: string): Promise<EspnEvent[
     const venueCity = comp.venue?.address?.city
     const state = comp.status.type.state as EspnEvent["state"]
 
+    // Ganador real (alargue/penales): ESPN marca winner=true en el que avanza
+    const winner: EspnEvent["winner"] = home.winner ? "home" : away.winner ? "away" : null
+
+    // Penales: shootoutScore presente en ambos cuando se define por penales
+    const hShoot = home.shootoutScore
+    const aShoot = away.shootoutScore
+    const shootout =
+      hShoot !== undefined && hShoot !== null && aShoot !== undefined && aShoot !== null
+        ? { home: parseInt(String(hShoot), 10) || 0, away: parseInt(String(aShoot), 10) || 0 }
+        : null
+
     events.push({
       eventId: e.id,
       homeCode,
@@ -131,6 +150,9 @@ export async function getEspnEventsForDate(yyyymmdd: string): Promise<EspnEvent[
       homeScore: parseInt(home.score ?? "0", 10) || 0,
       awayScore: parseInt(away.score ?? "0", 10) || 0,
       minute: state === "in" ? parseMinute(comp.status.displayClock) : null,
+      winner,
+      shootout,
+      statusDetail: comp.status.type.detail ?? comp.status.type.shortDetail ?? null,
     })
   }
   return events

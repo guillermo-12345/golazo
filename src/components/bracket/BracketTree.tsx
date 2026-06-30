@@ -11,6 +11,11 @@ export type MatchView = {
   status: string
   homeWon: boolean
   awayWon: boolean
+  /** Penales (si se definió por penales) */
+  homeShootout?: number | null
+  awayShootout?: number | null
+  /** "penalties" | "et" | undefined */
+  outcomeType?: string | null
 }
 export type RoundView = { stage: string; label: string; color: string; matches: MatchView[] }
 
@@ -36,9 +41,16 @@ export default function BracketTree({ rounds }: { rounds: RoundView[] }) {
                         : "border-white/10 bg-white/5 hover:border-green-500/30"
                     }`}
                   >
-                    <SlotRow slot={m.home} score={m.homeScore} status={m.status} winner={m.homeWon} />
+                    <SlotRow slot={m.home} score={m.homeScore} pens={m.homeShootout} status={m.status} winner={m.homeWon} />
                     <div className="h-px bg-white/8" />
-                    <SlotRow slot={m.away} score={m.awayScore} status={m.status} winner={m.awayWon} />
+                    <SlotRow slot={m.away} score={m.awayScore} pens={m.awayShootout} status={m.status} winner={m.awayWon} />
+                    {m.outcomeType && (
+                      <div className="px-2 pb-1 -mt-0.5">
+                        <span className="text-[8px] uppercase tracking-wider text-amber-400/80">
+                          {m.outcomeType === "penalties" ? "Penales" : "Alargue"}
+                        </span>
+                      </div>
+                    )}
                   </Link>
                 </div>
               ))}
@@ -53,11 +65,13 @@ export default function BracketTree({ rounds }: { rounds: RoundView[] }) {
 function SlotRow({
   slot,
   score,
+  pens,
   status,
   winner,
 }: {
   slot: SlotView
   score: number | null
+  pens?: number | null
   status: string
   winner: boolean
 }) {
@@ -89,8 +103,15 @@ function SlotRow({
         <span className="shrink-0 text-[8px] uppercase tracking-wider text-amber-400/80">prov</span>
       )}
       {(finished || status === "live") && (
-        <span className={`shrink-0 text-xs font-black tabular-nums ${winner ? "text-green-400" : "text-gray-400"}`}>
-          {score ?? 0}
+        <span className="shrink-0 flex items-baseline gap-0.5">
+          <span className={`text-xs font-black tabular-nums ${winner ? "text-green-400" : "text-gray-400"}`}>
+            {score ?? 0}
+          </span>
+          {pens != null && (
+            <span className={`text-[9px] font-bold tabular-nums ${winner ? "text-green-400/80" : "text-gray-500"}`}>
+              ({pens})
+            </span>
+          )}
         </span>
       )}
     </div>

@@ -72,6 +72,19 @@ function buildExtraData(m: DbMatch, ev: EspnEvent, det: EspnMatchDetails): Recor
     },
   }
 
+  // Ganador real (alargue/penales) y definición — orientado a nuestra DB
+  if (ev.winner) {
+    extra.winner = flipped ? (ev.winner === "home" ? "away" : "home") : ev.winner
+  }
+  if (ev.shootout) {
+    extra.shootout = flipped
+      ? { home: ev.shootout.away, away: ev.shootout.home }
+      : ev.shootout
+    extra.outcomeType = "penalties"
+  } else if (/aet|a\.e\.t|extra/i.test(ev.statusDetail ?? "")) {
+    extra.outcomeType = "et"
+  }
+
   if (det.halftime) {
     extra.halftime = flipped
       ? { home: det.halftime.away, away: det.halftime.home }

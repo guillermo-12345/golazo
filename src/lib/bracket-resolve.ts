@@ -30,7 +30,7 @@ export type BracketMatch = {
   away_team_code: string
   home_score: number | null
   away_score: number | null
-  extra_data: { bracket?: { h: string; a: string } } | null
+  extra_data: { bracket?: { h: string; a: string }; winner?: string } | null
 }
 
 export type SlotFill = { code: string; name: string }
@@ -112,17 +112,29 @@ function computeStandings(matches: BracketMatch[]): Map<string, TeamRow[]> {
   return standings
 }
 
-/** Ganador/perdedor de un partido terminado, orientado por marcador. */
+/**
+ * Ganador/perdedor de un partido terminado. Prioriza el ganador real de ESPN
+ * (extra_data.winner), que contempla alargue y penales; si no está, cae al
+ * marcador. Un empate sin ganador definido no resuelve (no avanza nadie).
+ */
 function matchOutcome(
   m: BracketMatch | undefined,
   which: "W" | "L"
 ): SlotFill | null {
-  if (!m || m.status !== "finished" || m.home_score === null || m.away_score === null) return null
-  if (m.home_score === m.away_score) return null // sin definición por penales acá
-  const homeWins = m.home_score > m.away_score
-  const pick = (which === "W") === homeWins
-  const code = pick ? m.home_team_code : m.away_team_code
-  const name = pick ? m.home_team : m.away_team
+  if (!m || m.status !== "finished") return null
+
+  let winnerSide: "home" | "away" | null = null
+  const w = m.extra_data?.winner
+  if (w === "home" || w === "away") {
+    winnerSide = w
+  } else if (m.home_score !== null && m.away_score !== null && m.home_score !== m.away_score) {
+    winnerSide = m.home_score > m.away_score ? "home" : "away"
+  }
+  if (!winnerSide) return null
+
+  const wantHome = (which === "W") === (winnerSide === "home")
+  const code = wantHome ? m.home_team_code : m.away_team_code
+  const name = wantHome ? m.home_team : m.away_team
   if (!code || code === "TBD") return null
   return { code, name }
 }

@@ -45,6 +45,14 @@ export default async function LlavesPage() {
     const finished = m.status === "finished"
     const hs = m.home_score
     const as = m.away_score
+    const ed = m.extra_data as {
+      winner?: string
+      shootout?: { home: number; away: number }
+      outcomeType?: string
+    } | null
+    // Ganador real: alargue/penales (extra_data.winner) o, si no, el marcador
+    const homeWon = finished && (ed?.winner === "home" || (!ed?.winner && hs !== null && as !== null && hs > as))
+    const awayWon = finished && (ed?.winner === "away" || (!ed?.winner && hs !== null && as !== null && as > hs))
     return {
       id: m.id,
       home: slotView(m.home_team, m.home_team_code, p?.home ?? null),
@@ -52,8 +60,11 @@ export default async function LlavesPage() {
       homeScore: hs,
       awayScore: as,
       status: m.status,
-      homeWon: finished && hs !== null && as !== null && hs > as,
-      awayWon: finished && hs !== null && as !== null && as > hs,
+      homeWon,
+      awayWon,
+      homeShootout: ed?.shootout?.home ?? null,
+      awayShootout: ed?.shootout?.away ?? null,
+      outcomeType: ed?.outcomeType ?? null,
     }
   }
 
