@@ -34,7 +34,9 @@ export const dynamic = "force-dynamic"
 export const maxDuration = 60
 
 const GROUP_STAGE_START = new Date("2026-06-11T00:00:00Z")
-const GROUP_STAGE_END = new Date("2026-06-27T23:59:59Z")
+// Ventana del sync "completo": todo el torneo (grupos + eliminatorias) para
+// reconciliar también fechas/sedes de los partidos de knockout.
+const GROUP_STAGE_END = new Date("2026-07-19T23:59:59Z")
 
 type DbMatch = {
   id: string
