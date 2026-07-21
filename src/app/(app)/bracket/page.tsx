@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import BracketForm from "@/components/bracket/BracketForm"
 import TournamentPodium from "@/components/bracket/TournamentPodium"
+import BracketStandings, { type BracketLeagueStanding, type BracketPicks } from "@/components/bracket/BracketStandings"
 import { getTournamentResults } from "@/lib/tournament-results"
 import { GitBranch, Lock, Trophy } from "lucide-react"
 import { redirect } from "next/navigation"
@@ -56,6 +57,42 @@ export default async function BracketPage() {
   const results = await getTournamentResults(supabase)
   const myBracketPoints = existingBrackets.reduce((max, b) => Math.max(max, b.points_earned ?? 0), 0)
 
+  // Brackets de todos los integrantes de las ligas del usuario (RLS limita a sus ligas)
+  const { data: allBracketsData } = await supabase
+    .from("bracket_predictions")
+    .select("league_id, user_id, bracket_data, points_earned, profiles(username, display_name, avatar_config)")
+    .order("points_earned", { ascending: false })
+
+  const allBrackets = (allBracketsData ?? []) as unknown as Array<{
+    league_id: string
+    user_id: string
+    bracket_data: BracketPicks
+    points_earned: number
+    profiles: { username: string; display_name: string; avatar_config: unknown } | null
+  }>
+
+  const leagueNameById = new Map<string, string>()
+  for (const l of leagues) if (l.leagues) leagueNameById.set(l.leagues.id, l.leagues.name)
+
+  const standingsMap = new Map<string, BracketLeagueStanding>()
+  for (const b of allBrackets) {
+    if (!b.profiles) continue
+    let s = standingsMap.get(b.league_id)
+    if (!s) {
+      s = { leagueId: b.league_id, leagueName: leagueNameById.get(b.league_id) ?? "Liga", entries: [] }
+      standingsMap.set(b.league_id, s)
+    }
+    s.entries.push({
+      userId: b.user_id,
+      displayName: b.profiles.display_name,
+      username: b.profiles.username,
+      avatarConfig: b.profiles.avatar_config,
+      picks: b.bracket_data ?? {},
+      points: b.points_earned ?? 0,
+    })
+  }
+  const bracketStandings = [...standingsMap.values()]
+
   return (
     <main className="max-w-3xl mx-auto px-4 md:px-8 py-8">
       <header className="mb-8">
@@ -76,6 +113,9 @@ export default async function BracketPage() {
           <span className="text-yellow-400 font-black text-lg">{myBracketPoints}<span className="text-gray-500 text-sm font-normal"> / 125 pts</span></span>
         </div>
       )}
+
+      {/* Qué predijo cada uno (con aciertos resaltados) */}
+      <BracketStandings results={results} standings={bracketStandings} currentUserId={user.id} />
 
       {/* Tabla de puntos */}
       <div className="bg-gradient-to-br from-yellow-500/10 to-orange-500/5 border border-yellow-500/20 rounded-2xl p-5 mb-6">
