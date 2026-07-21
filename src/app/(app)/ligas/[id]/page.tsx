@@ -10,6 +10,8 @@ import ShareButton from "@/components/ShareButton"
 import ShareCard from "@/components/leagues/ShareCard"
 import LeaveLeagueButton from "@/components/leagues/LeaveLeagueButton"
 import FavoriteLeagueButton from "@/components/leagues/FavoriteLeagueButton"
+import LeagueWinnerBanner from "@/components/leagues/LeagueWinnerBanner"
+import { isTournamentOver } from "@/lib/tournament-results"
 import LeagueChat from "@/components/leagues/LeagueChat"
 import { MessageCircle } from "lucide-react"
 
@@ -67,6 +69,10 @@ export default async function LigaDetailPage({ params }: { params: Promise<{ id:
   const isMember = !!myMembership
   const isFavorite = myMembership?.is_favorite ?? false
   const isCreator = league.created_by === user!.id
+
+  // Ganador de la liga (campeón si el Mundial terminó, si no el puntero)
+  const tournamentOver = await isTournamentOver(supabase)
+  const topMember = members[0]
 
   const shareText =
     league.type === "private" && league.invite_code
@@ -148,6 +154,20 @@ export default async function LigaDetailPage({ params }: { params: Promise<{ id:
       {/* Código de invitación */}
       {isMember && league.type === "private" && league.invite_code && (
         <InviteCodeBox code={league.invite_code} />
+      )}
+
+      {/* Ganador / puntero de la liga */}
+      {topMember && topMember.points > 0 && topMember.profiles && (
+        <div className="mt-6">
+          <LeagueWinnerBanner
+            displayName={topMember.profiles.display_name}
+            username={topMember.profiles.username}
+            avatarConfig={topMember.profiles.avatar_config}
+            points={topMember.points}
+            isChampion={tournamentOver}
+            isMe={topMember.user_id === user!.id}
+          />
+        </div>
       )}
 
       {/* Tabla de posiciones */}

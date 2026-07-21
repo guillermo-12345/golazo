@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import BracketForm from "@/components/bracket/BracketForm"
+import TournamentPodium from "@/components/bracket/TournamentPodium"
+import { getTournamentResults } from "@/lib/tournament-results"
 import { GitBranch, Lock, Trophy } from "lucide-react"
 import { redirect } from "next/navigation"
 
@@ -50,6 +52,10 @@ export default async function BracketPage() {
   const bracketDeadline = new Date("2026-06-25T02:59:59Z")
   const isLocked = new Date() > bracketDeadline
 
+  // Resultado real del Mundial (para mostrar el podio y puntuar el bracket)
+  const results = await getTournamentResults(supabase)
+  const myBracketPoints = existingBrackets.reduce((max, b) => Math.max(max, b.points_earned ?? 0), 0)
+
   return (
     <main className="max-w-3xl mx-auto px-4 md:px-8 py-8">
       <header className="mb-8">
@@ -61,6 +67,15 @@ export default async function BracketPage() {
           Predecí el podio del Mundial 2026 antes del 24 de junio. Cada acierto suma puntos a tu liga.
         </p>
       </header>
+
+      {/* Resultado real del Mundial + tu puntaje (cuando terminó) */}
+      <TournamentPodium results={results} />
+      {results.isOver && existingBrackets.length > 0 && (
+        <div className="flex items-center justify-between bg-white/5 border border-white/10 rounded-2xl px-5 py-4 mb-6">
+          <span className="text-gray-300 text-sm font-medium">Tu Bracket Challenge sumó</span>
+          <span className="text-yellow-400 font-black text-lg">{myBracketPoints}<span className="text-gray-500 text-sm font-normal"> / 125 pts</span></span>
+        </div>
+      )}
 
       {/* Tabla de puntos */}
       <div className="bg-gradient-to-br from-yellow-500/10 to-orange-500/5 border border-yellow-500/20 rounded-2xl p-5 mb-6">
